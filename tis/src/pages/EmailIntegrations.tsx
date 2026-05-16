@@ -125,7 +125,7 @@ export function EmailIntegrations() {
         body: JSON.stringify(form)
       });
       const data = await res.json();
-      setTestResult({ success: data.success, message: data.message || data.error });
+      setTestResult({ success: data.success, message: data.detail || data.message || data.error });
     } catch (e: any) {
       setTestResult({ success: false, message: e.message });
     }
@@ -359,10 +359,15 @@ export function EmailIntegrations() {
 
               {testResult && (
                 <div className={`p-4 rounded-xl flex items-start gap-3 animate-in slide-in-from-top-4 duration-300 ${testResult.success ? 'bg-sn-green/10 text-sn-green border border-sn-green/20' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                  {testResult.success ? <CheckCircle className="w-5 h-5 mt-0.5" /> : <XCircle className="w-5 h-5 mt-0.5" />}
+                  {testResult.success ? <CheckCircle className="w-5 h-5 mt-0.5" /> : <XCircle className="w-5 h-5 mt-0.5 min-w-[20px]" />}
                   <div className="text-sm">
                     <p className="font-bold">{testResult.success ? "Success" : "Connection Failed"}</p>
-                    <p className="opacity-80">{testResult.message}</p>
+                    <p className="opacity-90">{testResult.message}</p>
+                    {!testResult.success && testResult.message?.includes('535') && (
+                      <div className="mt-2 text-xs opacity-90 p-2 bg-red-100 rounded-md border border-red-200">
+                        <strong>Tip:</strong> Google/Microsoft accounts usually block standard passwords for third-party apps. You must generate an <strong>"App Password"</strong> from your account security settings and use that here instead of your regular login password.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
