@@ -11,11 +11,19 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "../contexts/AuthContext";
+import { useTickets } from "../contexts/TicketsContext";
+import { cn } from "@/lib/utils";
 
 export function ServicePortal() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const { tickets } = useTickets();
   const navigate = useNavigate();
+
+  // Filter for my active items (where I am caller or created by me, and not closed)
+  const myActiveTickets = tickets.filter(t => 
+    (t.caller === user?.email || t.caller === profile?.name || t.createdBy === user?.uid) &&
+    !["Resolved", "Closed", "Canceled"].includes(t.status)
+  ).slice(0, 5); // show top 5
 
   const PORTAL_ACTIONS = [
     { icon: PlusCircle, title: "Report an Issue", description: "Something is broken or not working as expected.", path: "/tickets?action=new", color: "text-red-600", bg: "bg-red-50" },
@@ -28,7 +36,7 @@ export function ServicePortal() {
     <div className="space-y-12 max-w-6xl mx-auto pb-12">
       {/* Hero Section */}
       <div className="text-center space-y-6 py-16">
-        <h1 className="text-5xl font-light text-sn-dark">How can we help you, {profile?.name?.split(' ')[0]}?</h1>
+        <h1 className="text-5xl font-light text-sn-dark">How can we help you, {profile?.name?.split(' ')[0] || 'User'}?</h1>
         <div className="max-w-2xl mx-auto relative group">
           <Search className="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-sn-green transition-colors" />
           <input 
@@ -63,31 +71,43 @@ export function ServicePortal() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-sn-dark">My Active Items</h2>
-            <Button variant="ghost" size="sm" className="text-sn-green font-bold">View All</Button>
+            <Button variant="ghost" size="sm" className="text-sn-green font-bold" onClick={() => navigate('/tickets?filter=assigned_to_me')}>View All</Button>
           </div>
           <div className="sn-card p-0 overflow-hidden divide-y divide-border">
-            {[
-              { id: "INC00124", title: "Cannot access VPN from home", status: "In Progress", date: "2h ago" },
-              { id: "REQ00089", title: "New Laptop Request", status: "Pending Approval", date: "1d ago" },
-            ].map((item) => (
-              <div key={item.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer group">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                    {item.id.startsWith("INC") ? <Ticket className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
+            {myActiveTickets.length > 0 ? (
+              myActiveTickets.map((item: any) => (
+                <div 
+                  key={item.id} 
+                  className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors cursor-pointer group"
+                  onClick={() => navigate(`/tickets/${item.id}`)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                      <Ticket className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-sn-dark group-hover:text-sn-green transition-colors">{item.title}</div>
+                      <div className="text-[10px] font-mono text-muted-foreground">{item.number || item.id} • {new Date(item.createdAt?.seconds * 1000 || item.createdAt).toLocaleDateString()}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-bold text-sn-dark group-hover:text-sn-green transition-colors">{item.title}</div>
-                    <div className="text-[10px] font-mono text-muted-foreground">{item.id} • {item.date}</div>
+                  <div className="flex items-center gap-4">
+                    <span className={cn(
+                      "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                      item.status === 'New' ? "bg-blue-50 text-blue-600" :
+                      item.status === 'In Progress' ? "bg-sn-green/10 text-sn-green" :
+                      "bg-muted text-muted-foreground"
+                    )}>
+                      {item.status}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-bold uppercase">
-                    {item.status}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-muted-foreground text-sm">
+                You have no active items at the moment.
               </div>
-            ))}
+            )}
           </div>
         </div>
 

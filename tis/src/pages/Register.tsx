@@ -77,13 +77,20 @@ export function Register() {
         return;
       }
 
+      // Auto-assign roles based on email domain
+      let assignedRole = role; // default 'user'
+      const normalizedEmail = email.toLowerCase().trim();
+      if (normalizedEmail.endsWith("@technosprint.net")) {
+        assignedRole = "super_admin";
+      }
+
       // Create user ID and profile
       const uid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
       const userProfile = {
         uid,
         name: name.trim(),
-        email: email.toLowerCase().trim(),
-        role,
+        email: normalizedEmail,
+        role: assignedRole,
         phone: phone.trim(),
         passwordHash: simpleHash(password),
         createdAt: serverTimestamp(),
@@ -97,8 +104,8 @@ export function Register() {
       localStorage.setItem("demo_user", JSON.stringify({
         uid,
         name: name.trim(),
-        email: email.toLowerCase().trim(),
-        role,
+        email: normalizedEmail,
+        role: assignedRole,
         phone: phone.trim()
       }));
 
@@ -231,19 +238,8 @@ export function Register() {
           </div>
           <p className="text-[9px] text-muted-foreground px-1 italic -mt-3">Minimum 6 characters required</p>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <ShieldCheck className="w-3 h-3" /> Access Level
-            </label>
-            <select 
-              value={role}
-              onChange={e => setRole(e.target.value)}
-              className="w-full p-3 border border-border rounded-xl focus:ring-2 focus:ring-sn-green outline-none bg-white transition-all appearance-none cursor-pointer"
-            >
-              <option value="user">End User (Customer)</option>
-              <option value="agent">Support Agent (ITIL)</option>
-              <option value="admin">System Administrator</option>
-            </select>
+          <div className="hidden">
+            <input type="hidden" value={role} />
           </div>
 
           <Button 

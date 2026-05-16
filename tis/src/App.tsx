@@ -103,12 +103,7 @@ export default function App() {
 function AppBody() {
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      seedInitialData();
-    }
-  }, [user]);
-
+  // Demo data seeding removed for production
   return (
     <ThemeProvider>
       <BrandingProvider>

@@ -81,10 +81,10 @@ export function GetStartedModal({ trigger }: GetStartedModalProps) {
                 </div>
               </div>
               <Button type="submit" className="w-full bg-sn-green font-bold text-sn-dark hover:bg-sn-green/90">
-                Request a Demo <ArrowRight className="ml-2 h-4 w-4" />
+                Contact Sales <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <p className="text-center text-xs text-text-dim">
-                By clicking "Request a Demo", you agree to our Terms of Service and Privacy Policy.
+                By clicking "Contact Sales", you agree to our Terms of Service and Privacy Policy.
               </p>
             </form>
           </>
@@ -95,7 +95,7 @@ export function GetStartedModal({ trigger }: GetStartedModalProps) {
             </div>
             <h2 className="mb-2 text-2xl font-bold text-white">Thank you!</h2>
             <p className="mb-8 text-text-dim">
-              We've received your request. A Connect expert will contact you shortly to schedule your personalized demo.
+              We've received your request. A Connect expert will contact you shortly.
             </p>
             <Button 
               onClick={() => setIsSubmitted(false)}

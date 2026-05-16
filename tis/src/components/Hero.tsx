@@ -25,7 +25,7 @@ export function Hero() {
             <div className="flex flex-wrap gap-4 pt-4">
               <GetStartedModal trigger={
                 <Button size="lg" className="bg-sn-green px-8 font-semibold text-sn-dark hover:bg-sn-green/90">
-                  Try the demo
+                  Get Started
                 </Button>
               } />
               <Button size="lg" variant="outline" className="border-white font-semibold text-white hover:bg-white hover:text-sn-dark">

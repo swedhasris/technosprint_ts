@@ -196,8 +196,12 @@ export function Tickets() {
     }
   }, [newTicket.company, searchParams]);
 
+  const getFp = (id: string) => {
+    return featurePermissions.find(f => f.featureId === id) || { canView: true, canUse: true, canEdit: true, isMandatory: false };
+  };
+
   const getFpProps = (id: string) => {
-    const p = featurePermissions.find(f => f.featureId === id) || { canView: true, canUse: true, canEdit: true, isMandatory: false };
+    const p = getFp(id);
     return {
       "data-feature-id": id,
       "data-mandatory": p.isMandatory ? "true" : "false"
@@ -329,7 +333,11 @@ export function Tickets() {
       return 0;
     };
 
-    if (filter === "assigned_to_me" && t.assignedTo !== user?.uid && t.assignedTo !== profile?.name && t.assignedToName !== profile?.name) return false;
+    if (filter === "assigned_to_me") {
+      const isAssigned = t.assignedTo === user?.uid || t.assignedTo === profile?.name || t.assignedToName === profile?.name;
+      const isCaller = t.caller === user?.email || t.caller === profile?.name || t.caller === user?.uid || t.createdBy === user?.uid;
+      if (!isAssigned && !isCaller) return false;
+    }
     if (filter === "open" && (t.status === "Resolved" || t.status === "Closed" || t.status === "Canceled")) return false;
     if (filter === "unassigned" && t.assignedTo) return false;
     if (filter === "resolved" && t.status !== "Resolved" && t.status !== "Closed") return false;
@@ -426,16 +434,22 @@ export function Tickets() {
     const req = (id: string, value: any) => {
       const p = getFp(id);
       if (!p.canView || !p.canUse) return true; // skip if hidden or disabled
+      if (!p.isMandatory) return true; // if not mandatory, it's valid even if empty
       return !!value;
     };
 
     if (!req('caller', newTicket.caller) || 
-        !req('short_description', newTicket.title) || 
-        !req('category', newTicket.category) || 
-        !req('subcategory', newTicket.subcategory) || 
-        !req('service', newTicket.service)) {
-      alert("Please fill in all visible required fields (Reporting User, Short description, Category, Subcategory, and Service).");
+        !req('short_description', newTicket.title)) {
+      alert("Please fill in all visible required fields (Reporting User, Short description).");
       return;
+    }
+
+    // Validate custom fields
+    for (const dd of customDropdowns) {
+      if (!req(dd.id, customFieldValues[dd.name])) {
+        alert(`Please fill in the mandatory field: ${dd.label}`);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -486,6 +500,7 @@ export function Tickets() {
 
       const ticketData = {
         ...newTicket,
+        customFields: customFieldValues,
         number: ticketNumber,
         assignmentGroup,
         assignedToName: assignedUserName,
@@ -607,7 +622,8 @@ export function Tickets() {
   };
 
   return (
-    <div className="space-y-6">
+    <FeatureContext.Provider value={{ getFp }}>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
@@ -793,7 +809,6 @@ export function Tickets() {
                       <div className="col-span-2 relative">
                         <div className="flex gap-1">
                           <input
-                            required
                             placeholder="Search for caller..."
                             value={callerSearch || newTicket.caller}
                             onChange={e => {
@@ -840,7 +855,6 @@ export function Tickets() {
                       <div className="col-span-2 relative">
                         <div className="flex gap-1">
                           <input
-                            required
                             placeholder="Search affected user..."
                             value={affectedSearch || newTicket.affectedUser || ''}
                             onChange={e => {
@@ -945,7 +959,6 @@ export function Tickets() {
                         <span className="text-red-500 font-bold">*</span> Category
                       </label>
                       <select
-                        required
                         value={newTicket.category}
                         onChange={e => {
                           setNewTicket({ 
@@ -972,7 +985,6 @@ export function Tickets() {
                         <span className="text-red-500 font-bold">*</span> Subcategory
                       </label>
                       <select
-                        required
                         value={newTicket.subcategory}
                         onChange={e => {
                           setNewTicket({ 
@@ -999,7 +1011,6 @@ export function Tickets() {
                         <span className="text-red-500 font-bold">*</span> Service
                       </label>
                       <select
-                        required
                         value={newTicket.service}
                         onChange={e => {
                           setNewTicket({ ...newTicket, service: e.target.value });
@@ -1299,7 +1310,6 @@ export function Tickets() {
                               {dd.label}
                             </label>
                             <select
-                              required={dd.isRequired}
                               value={customFieldValues[dd.name] || ""}
                               onChange={e => setCustomFieldValues(prev => ({ ...prev, [dd.name]: e.target.value }))}
                               className="col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white"
@@ -1326,7 +1336,6 @@ export function Tickets() {
                     </label>
                     <div className="col-span-5 flex gap-2">
                       <input
-                        required
                         value={newTicket.title}
                         onChange={e => setNewTicket({ ...newTicket, title: e.target.value })}
                         className="flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8"
@@ -1406,7 +1415,7 @@ export function Tickets() {
                 <FeatureGuard id="btn_submit">
                   <Button
                     type="submit"
-                    disabled={isSubmitting || suggestedSolution !== null}
+                    disabled={isSubmitting}
                     className="bg-sn-green text-sn-dark hover:bg-sn-green/90 px-8 h-8 text-[11px] font-bold uppercase tracking-wider shadow-sm disabled:opacity-50"
                   >
                     {isSubmitting ? "Submitting..." : "Submit"}
@@ -1417,6 +1426,7 @@ export function Tickets() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </FeatureContext.Provider>
   );
 }

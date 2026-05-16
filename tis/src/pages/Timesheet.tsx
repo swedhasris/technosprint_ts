@@ -413,9 +413,12 @@ export function Timesheet() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log("[Timesheet] Got tickets snapshot:", snapshot.docs.length);
       let tickets: any[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Filter: not resolved/closed (all open tickets)
+      // Filter: not resolved/closed (all open tickets) AND assigned to current user
       tickets = tickets.filter(t =>
-        t.status !== "Resolved" && t.status !== "Closed" && t.status !== "Canceled"
+        t.status !== "Resolved" && 
+        t.status !== "Closed" && 
+        t.status !== "Canceled" &&
+        (t.assignedTo === user.uid || (profile?.name && t.assignedToName === profile.name))
       );
       // Sort client-side by createdAt
       tickets.sort((a, b) => {

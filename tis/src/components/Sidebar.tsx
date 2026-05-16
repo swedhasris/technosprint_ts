@@ -85,7 +85,7 @@ export function Sidebar() {
         { icon: LayoutDashboard, label: profile?.role === 'user' ? "Service Portal" : "Incident Dashboard", path: "/" },
         { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
         { icon: CalendarDays, label: "Calendar", path: "/calendar" },
-        { icon: Ticket, label: "My Tickets", path: "/timesheet" },
+        { icon: Ticket, label: "My Tickets", path: "/tickets?filter=assigned_to_me" },
         { icon: BarChart2, label: "Timesheet Reports", path: "/timesheet/reports" },
         { icon: Monitor, label: "AI Activity Tracker", path: "/activity-tracker" },
       ]
