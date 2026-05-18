@@ -1236,11 +1236,18 @@ async function startServer() {
   app.post("/api/email/send-note", async (req, res) => {
     try {
       const { to, subject, body, attachments } = req.body;
-      await OmniChannelEngine.sendEmail(to, subject, body, attachments);
+      
+      const configs = await query("SELECT * FROM company_email_configs WHERE is_active = 1 ORDER BY is_default DESC LIMIT 1");
+      if (configs.length > 0) {
+        await OmniChannelEngine.sendEmailByConfig(configs[0], to, subject, body, attachments);
+      } else {
+        await OmniChannelEngine.sendEmail(to, subject, body, attachments);
+      }
+      
       res.json({ message: "Email sent successfully" });
     } catch (error: any) {
       console.error("[Email] Send note failed:", error);
-      res.status(500).json({ error: "Failed to send email" });
+      res.status(500).json({ error: "Failed to send email: " + error.message });
     }
   });
 
@@ -1693,16 +1700,8 @@ async function startServer() {
                 }
 
                 console.log(`[Interceptor] Dispatching email to: ${recipientEmail}`);
-                // Fetch the company email configuration
-                let configRows = [];
-                if (companyId) {
-                  configRows = await query("SELECT * FROM company_email_configs WHERE id = ? OR company_name = ?", [companyId, companyId]);
-                }
-                
-                // Fallback to active/default configs if not matched
-                if (configRows.length === 0) {
-                  configRows = await query("SELECT * FROM company_email_configs WHERE is_active = 1 ORDER BY is_default DESC LIMIT 1");
-                }
+                // Fetch the default email configuration (Support@technosprint.net)
+                let configRows = await query("SELECT * FROM company_email_configs WHERE is_active = 1 ORDER BY is_default DESC LIMIT 1");
 
                 if (configRows.length > 0) {
                   const config = configRows[0];

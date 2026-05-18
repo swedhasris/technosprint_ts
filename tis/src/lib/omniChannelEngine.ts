@@ -18,12 +18,12 @@ export class OmniChannelEngine {
    */
   private static async createTransporter(config: any) {
     return nodemailer.createTransport({
-      host: config.smtp_host,
-      port: config.smtp_port,
-      secure: config.smtp_port === 465,
+      host: config.smtp_host || process.env.SMTP_HOST || 'mail.technosprint.net',
+      port: config.smtp_port || parseInt(process.env.SMTP_PORT || '465'),
+      secure: (config.smtp_port || parseInt(process.env.SMTP_PORT || '465')) === 465,
       auth: {
-        user: config.smtp_user,
-        pass: config.smtp_pass,
+        user: config.smtp_user || process.env.SMTP_USER || 'Support@technosprint.net',
+        pass: config.smtp_pass || process.env.SMTP_PASS || '',
       },
       tls: {
         rejectUnauthorized: false
@@ -36,9 +36,9 @@ export class OmniChannelEngine {
    */
   private static getTransporter() {
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465',
+      host: process.env.SMTP_HOST || 'mail.technosprint.net',
+      port: parseInt(process.env.SMTP_PORT || '465'),
+      secure: (process.env.SMTP_PORT || '465') === '465',
       auth: {
         user: process.env.SMTP_USER || 'Support@technosprint.net',
         pass: process.env.SMTP_PASS || '',
@@ -85,11 +85,11 @@ export class OmniChannelEngine {
         
         const imapConfig = {
           imap: {
-            user: config.imap_user,
-            password: config.imap_pass,
-            host: config.imap_host,
-            port: config.imap_port,
-            tls: true, // Force TLS for Gmail
+            user: config.imap_user || process.env.IMAP_USER,
+            password: config.imap_pass || process.env.IMAP_PASS,
+            host: config.imap_host || process.env.IMAP_HOST || 'mail.technosprint.net',
+            port: config.imap_port || parseInt(process.env.IMAP_PORT || '993'),
+            tls: true,
             tlsOptions: { rejectUnauthorized: false },
             authTimeout: 10000,
           }
@@ -97,6 +97,12 @@ export class OmniChannelEngine {
 
         try {
           const connection = await imaps.connect(imapConfig);
+          
+          // Handle unhandled IMAP stream errors to prevent server crash
+          connection.on('error', (err: any) => {
+            console.warn(`[OmniChannel] IMAP stream error for ${config.company_name}:`, err.message);
+          });
+
           await connection.openBox('INBOX');
 
           // Search only for unseen emails to prevent processing already-seen duplicate emails
