@@ -643,15 +643,14 @@ export function Tickets() {
               onClick={async () => {
                 if (!window.confirm("Delete ALL tickets permanently?")) return;
                 try {
-                  const snap = await getDocs(collection(db, "tickets"));
-                  for (const d of snap.docs) {
-                    await deleteDoc(doc(db, "tickets", d.id));
+                  const res = await fetch("/api/tickets/all", { method: "DELETE" });
+                  if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || "Failed to delete all tickets securely.");
                   }
-                  alert("Cleaned " + snap.size + " tickets from Firestore.");
-                  // Also call SQL delete via API
-                  await fetch("/api/tickets/all", { method: "DELETE" }).catch(() => {});
-                } catch (e) {
-                  alert(e.message);
+                  alert("Successfully deleted all tickets permanently.");
+                } catch (e: any) {
+                  alert("Delete Failed: " + e.message);
                 }
               }}
             >
@@ -764,7 +763,15 @@ export function Tickets() {
                         </Link>
                         <button onClick={async () => {
                           if (confirm(`Are you sure you want to delete ticket ${ticket.number}?`)) {
-                            await deleteDoc(doc(db, "tickets", ticket.id));
+                            try {
+                              const res = await fetch(`/api/tickets/${ticket.id}`, { method: "DELETE" });
+                              if (!res.ok) {
+                                const data = await res.json();
+                                throw new Error(data.error || "Failed to delete ticket securely.");
+                              }
+                            } catch (e: any) {
+                              alert("Delete Failed: " + e.message);
+                            }
                           }
                         }} className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors" title="Delete Ticket">
                           <Trash2 className="w-3.5 h-3.5" />

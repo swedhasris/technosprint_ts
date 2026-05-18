@@ -33,6 +33,26 @@ console.log(`[Kiru AI] GEMINI_API_KEY: ${geminiKey && geminiKey !== "MY_GEMINI_A
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import admin from "firebase-admin";
+let adminDb: any;
+try {
+  const firebaseConfigPath = path.join(process.cwd(), "firebase-applet-config.json");
+  const config = JSON.parse(fs.readFileSync(firebaseConfigPath, "utf8"));
+  admin.initializeApp({
+    projectId: config.projectId
+  });
+  adminDb = admin.firestore();
+  console.log("[Firebase Admin] Privileged initialization successful for project:", config.projectId);
+} catch (e: any) {
+  console.error("[Firebase Admin] Privileged initialization failed, trying default:", e.message);
+  try {
+    admin.initializeApp();
+    adminDb = admin.firestore();
+  } catch (err: any) {
+    console.error("[Firebase Admin] Fatal: Could not initialize Admin SDK:", err.message);
+  }
+}
+
 // Database configuration
 const dbConfig = {
   host: process.env.MYSQL_HOST || 'localhost',
@@ -2061,6 +2081,62 @@ async function startServer() {
     } catch (error: any) {
       console.error("Error deleting time card:", error);
       res.status(500).json({ error: "Failed to delete time card" });
+    }
+  });
+
+  // ═══ TICKETS SECURE SERVER-SIDE DELETE APIS (Ultra Super Admin bypass) ═══
+  app.delete("/api/tickets/all", async (req, res) => {
+    try {
+      console.log("[Tickets API] secure bulk delete triggered by Admin");
+      
+      // Delete all documents in Firestore using privileged adminDb
+      const ticketsRef = adminDb.collection("tickets");
+      const snapshot = await ticketsRef.get();
+      const batch = adminDb.batch();
+      snapshot.docs.forEach((doc: any) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      console.log(`[Tickets API] Cleared ${snapshot.size} tickets from Firestore`);
+
+      // Delete from SQL
+      if (useSQLite) {
+        const db = await getSQLiteDb();
+        await db.run("DELETE FROM tickets");
+      } else {
+        await execute("DELETE FROM tickets");
+      }
+      console.log("[Tickets API] Cleared all tickets from SQL Database");
+
+      res.json({ success: true, message: `Successfully deleted all ${snapshot.size} tickets.` });
+    } catch (error: any) {
+      console.error("[Tickets API] Secure bulk delete failed:", error);
+      res.status(500).json({ error: "Failed to delete all tickets securely", detail: error.message });
+    }
+  });
+
+  app.delete("/api/tickets/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      console.log(`[Tickets API] secure single delete triggered for: ${id}`);
+      
+      // Delete document in Firestore using privileged adminDb
+      await adminDb.collection("tickets").doc(id).delete();
+      console.log(`[Tickets API] Deleted ticket ${id} from Firestore`);
+
+      // Delete from SQL
+      if (useSQLite) {
+        const db = await getSQLiteDb();
+        await db.run("DELETE FROM tickets WHERE id = ?", [id]);
+      } else {
+        await execute("DELETE FROM tickets WHERE id = ?", [id]);
+      }
+      console.log(`[Tickets API] Deleted ticket ${id} from SQL Database`);
+
+      res.json({ success: true, message: `Successfully deleted ticket ${id}.` });
+    } catch (error: any) {
+      console.error(`[Tickets API] Secure delete for ${id} failed:`, error);
+      res.status(500).json({ error: "Failed to delete ticket securely", detail: error.message });
     }
   });
 
