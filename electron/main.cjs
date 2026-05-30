@@ -114,6 +114,21 @@ ipcMain.handle('capture-screen', async () => {
   }
 });
 
+/* ── IPC: set always on top state ── */
+ipcMain.handle('set-always-on-top', async (event, flag) => {
+  try {
+    if (mainWindow) {
+      mainWindow.setAlwaysOnTop(Boolean(flag), 'screen-saver');
+      return { success: true };
+    }
+    return { error: 'No main window available' };
+  } catch (err) {
+    console.error('[Electron] Set always-on-top failed:', err);
+    return { error: err.message };
+  }
+});
+
+
 /* ── IPC: get all screens (for multi-monitor) ── */
 ipcMain.handle('get-screens', async () => {
   try {

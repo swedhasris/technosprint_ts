@@ -17,6 +17,8 @@ const MAX_HEIGHT = 1080;
 /** JPEG quality (0–1). Only applies to JPEG output. */
 const JPEG_QUALITY = 0.82;
 
+declare var ImageCapture: any;
+
 export type ScreenshotContext = 'start' | 'stop';
 export type ImageFormat = 'png' | 'jpeg';
 

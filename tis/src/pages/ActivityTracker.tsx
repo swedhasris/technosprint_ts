@@ -65,7 +65,7 @@ function ScreenshotModal({ src, onClose }: { src: string; onClose: () => void })
 }
 
 /* ── Feed Entry Card ── */
-function FeedEntry({ entry, onPreview }: { entry: ActivityEntry; onPreview: (src: string) => void }) {
+function FeedEntry({ entry, onPreview }: { key?: React.Key; entry: ActivityEntry; onPreview: (src: string) => void }) {
   if (entry.isProcessing) {
     return (
       <div className="flex gap-3">
@@ -447,7 +447,7 @@ export function ActivityTracker() {
 
   const breakdown = entries.filter(e => !e.isProcessing && !e.isIdle)
     .reduce<Record<string, number>>((acc, e) => { acc[e.activity] = (acc[e.activity] || 0) + 1; return acc; }, {});
-  const topActivity = Object.entries(breakdown).sort((a, b) => b[1] - a[1])[0];
+  const topActivity = Object.entries(breakdown).sort((a, b) => (b[1] as number) - (a[1] as number))[0];
   const totalKeys = entries.reduce((s, e) => s + e.keystrokes, 0);
   const totalClicks = entries.reduce((s, e) => s + e.clicks.length, 0);
 

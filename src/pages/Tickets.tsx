@@ -413,7 +413,7 @@ export function Tickets() {
 
     const hasCategoryAccess = ["admin", "super_admin", "ultra_super_admin"].includes(profile?.role || "") ||
       ["arun@technosprint.net", "ulter@technosprint.net", "admin@technosprint.net", "admin@connectit.local", "demo-admin@connectit.local", "demo-super_admin@connectit.local", "demo-ultra_super_admin@connectit.local"].includes(user?.email || profile?.email || "");
-    if (hasCategoryAccess) {
+    if (hasCategoryAccess && dynamicFields.length > 0) {
       for (const field of dynamicFields) {
         if (!newTicket.customFields?.[field.id]) {
           alert(`Please select a value for: ${field.name}`);
@@ -422,21 +422,19 @@ export function Tickets() {
       }
     }
 
-    const requiredFieldChecks = [
-      { key: "field.caller", label: "Reporting User", value: newTicket.caller },
-      { key: "field.affectedUser", label: "Affected User", value: newTicket.affectedUser },
-      { key: "field.title", label: "Short description", value: newTicket.title },
-      { key: "field.category", label: "Category", value: newTicket.category },
-      { key: "field.subcategory", label: "Subcategory", value: newTicket.subcategory },
-      { key: "field.service", label: "Service", value: newTicket.service },
-      { key: "field.description", label: "Description", value: newTicket.description },
-      { key: "field.company", label: "Company", value: newTicket.company },
-      { key: "field.assignmentGroup", label: "Assignment group", value: newTicket.assignmentGroup },
-      { key: "field.assignedTo", label: "Assigned to", value: newTicket.assignedTo },
+    // Only validate truly required fields: caller and title are always required.
+    // category, subcategory, service are required only when their feature is visible.
+    // description, company, assignmentGroup, assignedTo are optional unless explicitly made mandatory.
+    const coreRequiredFieldChecks = [
+      { key: "field.caller", label: "Reporting User", value: newTicket.caller, alwaysRequired: true },
+      { key: "field.title", label: "Short description", value: newTicket.title, alwaysRequired: true },
+      { key: "field.category", label: "Category", value: newTicket.category, alwaysRequired: true },
+      { key: "field.subcategory", label: "Subcategory", value: newTicket.subcategory, alwaysRequired: true },
+      { key: "field.service", label: "Service", value: newTicket.service, alwaysRequired: true },
     ];
 
-    const missingRequiredField = requiredFieldChecks.find(({ key, value }) =>
-      isFeatureVisible(key) && getFieldRequired(key, ["field.caller", "field.title", "field.category", "field.subcategory", "field.service"].includes(key)) && !value
+    const missingRequiredField = coreRequiredFieldChecks.find(({ key, value, alwaysRequired }) =>
+      isFeatureVisible(key) && (alwaysRequired || isFeatureMandatory(key)) && !value
     );
 
     if (missingRequiredField) {
@@ -844,7 +842,7 @@ export function Tickets() {
                     size="sm"
                     className="bg-sn-green text-sn-dark font-bold"
                     onClick={(e: any) => handleCreateTicket(e)}
-                    disabled={isSubmitting || suggestedSolution !== null || isFeatureDisabled("button.submit")}
+                    disabled={isSubmitting || isFeatureDisabled("button.submit")}
                   >
                     {isSubmitting ? "Submitting..." : "Submit"}
                   </Button>
@@ -1609,7 +1607,7 @@ export function Tickets() {
                   {isFeatureVisible("button.submit") && (
                     <Button
                       type="submit"
-                      disabled={isSubmitting || suggestedSolution !== null || isFeatureDisabled("button.submit")}
+                      disabled={isSubmitting || isFeatureDisabled("button.submit")}
                       className="bg-sn-green text-sn-dark hover:bg-sn-green/90 px-8 h-8 text-[11px] font-bold uppercase tracking-wider shadow-sm disabled:opacity-50"
                     >
                       {isSubmitting ? "Submitting..." : "Submit"}

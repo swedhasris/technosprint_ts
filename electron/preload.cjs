@@ -15,4 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   /** Check if running inside Electron */
   isElectron: true,
+
+  /** Set main window always on top */
+  setAlwaysOnTop: (flag) => ipcRenderer.invoke('set-always-on-top', flag),
 });

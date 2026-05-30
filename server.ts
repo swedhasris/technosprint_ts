@@ -223,6 +223,9 @@ async function getSQLiteDb() {
     `);
     // Migrate: add screenshot_url column if missing (safe to re-run)
     try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN screenshot_url TEXT;"); } catch (e) {}
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_by TEXT;"); } catch (e) {}
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_at DATETIME;"); } catch (e) {}
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN rejection_reason TEXT;"); } catch (e) {}
     try { await sqliteDb.exec("ALTER TABLE time_cards ADD COLUMN notes TEXT;"); } catch (e) {}
     try {
       await sqliteDb.exec("ALTER TABLE tickets ADD COLUMN response_sla_start_time DATETIME");
@@ -450,7 +453,7 @@ cron.schedule("*/15 * * * *", () => {
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3005;
+  const PORT = parseInt(process.env.PORT || "3005", 10);
 
   app.use(express.json());
 
@@ -478,6 +481,9 @@ async function startServer() {
         ) ENGINE=InnoDB
       `);
       try { await execute("ALTER TABLE timesheets ADD COLUMN screenshot_url LONGTEXT;"); } catch(e) {}
+      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_by VARCHAR(128);"); } catch(e) {}
+      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_at TIMESTAMP NULL;"); } catch(e) {}
+      try { await execute("ALTER TABLE timesheets ADD COLUMN rejection_reason LONGTEXT;"); } catch(e) {}
 
       await execute(`
         CREATE TABLE IF NOT EXISTS ticket_activities (
@@ -2155,6 +2161,9 @@ async function startServer() {
   app.put("/api/timesheets/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      if (req.body.status === 'Approved' && !req.body.approved_at) {
+        req.body.approved_at = formatDate(new Date());
+      }
       const fields = Object.keys(req.body).filter(k => k !== 'id');
       const setClause = fields.map(k => `${k} = ?`).join(', ');
       const values = [...fields.map(k => req.body[k]), id];
@@ -3176,6 +3185,13 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
 
       const psScript = `
         try {
+          # Make process DPI-aware to get true physical resolutions
+          try {
+            $signature = '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+            $type = Add-Type -MemberDefinition $signature -Name "DpiAware" -Namespace "Win32" -PassThru
+            $null = $type::SetProcessDPIAware()
+          } catch {}
+
           [void][Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
           [void][Reflection.Assembly]::LoadWithPartialName("System.Drawing")
           
@@ -3769,8 +3785,8 @@ What specific logic or programming language are we working with today?`;
 
   // AI Chat Endpoint
   app.post("/api/ai/chat", async (req, res) => {
+    const { message, history } = req.body;
     try {
-      const { message, history } = req.body;
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "Invalid message" });
       }

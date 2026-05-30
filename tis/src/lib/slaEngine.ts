@@ -17,7 +17,7 @@ export interface SLAPolicy {
 export interface SLAAuditLog {
   ticket_id: string;
   sla_type: 'Response' | 'Resolution';
-  event_type: 'Start' | 'Pause' | 'Resume' | 'Stop' | 'Breach';
+  event_type: 'Start' | 'Pause' | 'Resume' | 'Stop' | 'Breach' | 'Warning';
   timestamp: string;
   reason?: string;
 }

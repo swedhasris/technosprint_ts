@@ -79,7 +79,7 @@ export function TimesheetApprovals() {
   const handleApprove = async (tsId: string) => {
     if (!confirm("Approve this timesheet?")) return;
     try {
-      await fetch(`/api/timesheets/${tsId}`, {
+      const res = await fetch(`/api/timesheets/${tsId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -87,23 +87,41 @@ export function TimesheetApprovals() {
           approved_by: profile?.uid
         })
       });
-      loadData();
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        alert("Timesheet Approved Successfully.");
+        loadData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Failed to approve timesheet: ${errData.error || 'Server error'}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred while approving the timesheet.");
+    }
   };
 
   const handleReject = async () => {
     if (!rejectId || !rejectReason.trim()) return;
     try {
-      await fetch(`/api/timesheets/${rejectId}`, {
+      const res = await fetch(`/api/timesheets/${rejectId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Rejected", rejection_reason: rejectReason })
       });
-      setRejectId(null);
-      setRejectReason("");
-      setViewTs(null);
-      loadData();
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        alert("Timesheet Rejected Successfully.");
+        setRejectId(null);
+        setRejectReason("");
+        setViewTs(null);
+        loadData();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(`Failed to reject timesheet: ${errData.error || 'Server error'}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred while rejecting the timesheet.");
+    }
   };
 
   const handleDownloadCSV = () => {

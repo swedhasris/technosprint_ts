@@ -28,6 +28,8 @@ export const CREATE_INCIDENT_FORM_DEFAULTS = {
   affectedUser: "",
   watchList: "",
   company: "",
+  selectedGroupId: "",
+  customFields: {} as Record<string, string>,
 };
 
 export type CreateIncidentFieldKey = keyof typeof CREATE_INCIDENT_FORM_DEFAULTS;

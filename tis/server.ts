@@ -376,6 +376,9 @@ async function getSQLiteDb() {
 
     // Migrate columns safely
     try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN screenshot_url TEXT;"); } catch (e) {}
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_by TEXT;"); } catch (e) {}
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_at DATETIME;"); } catch (e) {}
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN rejection_reason TEXT;"); } catch (e) {}
     try { await sqliteDb.exec("ALTER TABLE time_cards ADD COLUMN notes TEXT;"); } catch (e) {}
     try { await sqliteDb.exec("ALTER TABLE activity_entries ADD COLUMN keystrokes INTEGER DEFAULT 0"); } catch (e) {}
     try { await sqliteDb.exec("ALTER TABLE activity_entries ADD COLUMN clicks INTEGER DEFAULT 0"); } catch (e) {}
@@ -600,6 +603,9 @@ async function startServer() {
         ) ENGINE=InnoDB
       `);
       try { await execute("ALTER TABLE timesheets ADD COLUMN screenshot_url LONGTEXT;"); } catch(e) {}
+      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_by VARCHAR(128);"); } catch(e) {}
+      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_at TIMESTAMP NULL;"); } catch(e) {}
+      try { await execute("ALTER TABLE timesheets ADD COLUMN rejection_reason LONGTEXT;"); } catch(e) {}
 
       await execute(`
         CREATE TABLE IF NOT EXISTS ticket_activities (
@@ -2447,6 +2453,9 @@ async function startServer() {
   app.put("/api/timesheets/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      if (req.body.status === 'Approved' && !req.body.approved_at) {
+        req.body.approved_at = formatDate(new Date());
+      }
       const fields = Object.keys(req.body).filter(k => k !== 'id');
       const setClause = fields.map(k => `${k} = ?`).join(', ');
       const values = [...fields.map(k => req.body[k]), id];
@@ -2641,8 +2650,8 @@ async function startServer() {
   });
 
   app.delete("/api/tickets/:id", async (req, res) => {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       console.log(`[Tickets API] secure single delete triggered for: ${id}`);
       
       // Delete document in Firestore using privileged adminDb
@@ -3524,6 +3533,13 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
 
       const psScript = `
         try {
+          # Make process DPI-aware to get true physical resolutions
+          try {
+            $signature = '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+            $type = Add-Type -MemberDefinition $signature -Name "DpiAware" -Namespace "Win32" -PassThru
+            $null = $type::SetProcessDPIAware()
+          } catch {}
+
           [void][Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
           [void][Reflection.Assembly]::LoadWithPartialName("System.Drawing")
           

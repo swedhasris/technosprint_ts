@@ -102,6 +102,7 @@ function ChatBubble({
   msg,
   onPreviewClick,
 }: {
+  key?: React.Key;
   msg: WorkNoteMessage;
   onPreviewClick: (src: string) => void;
 }) {

@@ -363,19 +363,19 @@ async function captureTabScreenshot(): Promise<{ dataUrl: string; blob: Blob; fi
   try {
     const html2canvas = (await import('html2canvas')).default;
     const canvas = await html2canvas(document.documentElement, {
-      scale: 0.8,
+      scale: window.devicePixelRatio || 1,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false,
-      width: window.innerWidth,
-      height: window.innerHeight,
-      windowWidth: window.innerWidth,
-      windowHeight: window.innerHeight,
-      x: 0,
-      y: 0,
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight,
+      windowWidth: document.documentElement.clientWidth,
+      windowHeight: document.documentElement.clientHeight,
       scrollX: 0,
       scrollY: 0,
+      x: window.scrollX,
+      y: window.scrollY,
       ignoreElements: (el) => el.tagName === 'VIDEO' || el.tagName === 'IFRAME',
     });
     const blob = await new Promise<Blob>((res, rej) =>

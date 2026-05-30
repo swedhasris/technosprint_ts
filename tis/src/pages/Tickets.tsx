@@ -17,7 +17,7 @@ const FeatureContext = React.createContext<{ getFp: (id: string) => any }>({
   getFp: () => ({ canView: true, canUse: true, canEdit: true, isMandatory: false })
 });
 
-const FeatureGuard = ({ id, children }: { id: string, children: React.ReactNode }) => {
+const FeatureGuard = ({ id, children }: { id: string, children: React.ReactNode, key?: React.Key }) => {
   const { getFp } = React.useContext(FeatureContext);
   const p = getFp(id);
   if (!p.canView) return null;

@@ -9,9 +9,12 @@ import { Sidebar } from "./components/Sidebar";
 import { AppNavbar } from "./components/AppNavbar";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AIChatbot } from "./components/AIChatbot";
+import { CodexPet } from "./components/CodexPet";
+import { TechnosprintPet } from "./components/TechnosprintPet";
 import { seedInitialData } from "./lib/seed";
 import { useEffect } from "react";
 import { ROLE_HIERARCHY, Role } from "./lib/roles";
+import "./styles/codex-pet.css";
 
 // Lazy loaded components
 const Dashboard = lazy(() => import("./pages/Dashboard").then(m => ({ default: m.Dashboard })));
@@ -394,6 +397,8 @@ function AppBody() {
           />
           <Route path="*" element={<Navigate to="/" />} />
           </Routes>
+          <CodexPet />
+          <TechnosprintPet />
         </Suspense>
           </Router>
         </ActivityTrackerProvider>

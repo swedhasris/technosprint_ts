@@ -25,7 +25,7 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
-      https: true,
+      https: true as any,
       port: 5173,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify

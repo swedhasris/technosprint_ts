@@ -454,7 +454,7 @@ export function createSpeechController(
 
   const Ctor =
     typeof window !== "undefined"
-      ? (window.SpeechRecognition ?? window.webkitSpeechRecognition)
+      ? ((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition)
       : undefined;
 
   if (!Ctor) {
