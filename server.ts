@@ -20,7 +20,7 @@ loadEnv();
 
 // Log API key status at startup (masked for security)
 const geminiKey = process.env.GEMINI_API_KEY;
-console.log(`[Kiru AI] GEMINI_API_KEY: ${geminiKey && geminiKey !== "MY_GEMINI_API_KEY" && geminiKey !== "your_gemini_api_key_here" ? "✓ Loaded" : "✗ NOT SET — Kiru AI will not work"}`);
+console.log(`[Kiru AI] GEMINI_API_KEY: ${geminiKey && geminiKey !== "MY_GEMINI_API_KEY" && geminiKey !== "your_gemini_api_key_here" ? "âœ“ Loaded" : "âœ— NOT SET â€” Kiru AI will not work"}`);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -526,7 +526,7 @@ async function startServer() {
         console.log('[MySQL] Added notes column to time_cards table');
       } catch (e) {}
 
-      // ═══ MASTER DATA TABLES ═══
+      // â•â•â• MASTER DATA TABLES â•â•â•
       
       // Standalone tables
       const standaloneTables = [
@@ -711,7 +711,7 @@ async function startServer() {
     }
   }
 
-  // ═══ REAL-TIME NOTIFICATION SYSTEM ═══
+  // â•â•â• REAL-TIME NOTIFICATION SYSTEM â•â•â•
   let sseClients: { userId: string; res: any }[] = [];
 
   function sendNotificationToUser(userId: string, notif: any) {
@@ -916,7 +916,7 @@ async function startServer() {
     }
   });
 
-  // ═══ Incident Category Management Endpoints ═══
+  // â•â•â• Incident Category Management Endpoints â•â•â•
   
   // Helper to check admin permission
   async function checkAdminAccess(req: any, res: any): Promise<boolean> {
@@ -2052,7 +2052,7 @@ async function startServer() {
       try {
         await execute("UPDATE tickets SET updated_at = ? WHERE id = ?", [formatDate(new Date()), id]);
       } catch (e) {
-        // Non-critical — ticket may be Firestore-only
+        // Non-critical â€” ticket may be Firestore-only
       }
 
       const activities = await query("SELECT * FROM ticket_activities WHERE id = ?", [result.insertId]);
@@ -2317,7 +2317,7 @@ async function startServer() {
     }
   });
 
-  // ═══ WORK SESSIONS TABLE ═══
+  // â•â•â• WORK SESSIONS TABLE â•â•â•
   try {
     if (useSQLite) {
       const db = await getSQLiteDb();
@@ -2367,7 +2367,7 @@ async function startServer() {
     console.error('[DB] Work sessions table init failed:', e.message);
   }
 
-  // ═══ AI Work Analysis Endpoint ═══
+  // â•â•â• AI Work Analysis Endpoint â•â•â•
   app.post("/api/ai/analyze-work", async (req, res) => {
     try {
       const { context, ticketNumber, ticketTitle, action, elapsedTime } = req.body;
@@ -2487,7 +2487,7 @@ Respond ONLY with valid JSON.`;
     };
   }
 
-  // ═══ Work Sessions CRUD ═══
+  // â•â•â• Work Sessions CRUD â•â•â•
   app.post("/api/work-sessions", async (req, res) => {
     try {
       const { user_id, user_name, ticket_id, ticket_number, start_time, stop_time, duration, start_context, stop_context, ai_notes_start, ai_notes_stop, status } = req.body;
@@ -2540,7 +2540,7 @@ Respond ONLY with valid JSON.`;
     }
   });
 
-  // ═══ WORK NOTES TABLE INIT ═══
+  // â•â•â• WORK NOTES TABLE INIT â•â•â•
   try {
     if (useSQLite) {
       const db = await getSQLiteDb();
@@ -2595,7 +2595,7 @@ Respond ONLY with valid JSON.`;
     console.error('[DB] Work notes table init failed:', e.message);
   }
 
-  // ═══ MESSAGE HISTORY TABLE INIT ═══
+  // â•â•â• MESSAGE HISTORY TABLE INIT â•â•â•
   try {
     if (useSQLite) {
       const db = await getSQLiteDb();
@@ -2632,7 +2632,7 @@ Respond ONLY with valid JSON.`;
     console.error('[DB] Message history table init failed:', e.message);
   }
 
-  // ═══ ACTIVITY TRACKER TABLES INIT ═══
+  // â•â•â• ACTIVITY TRACKER TABLES INIT â•â•â•
   try {
     if (useSQLite) {
       const db = await getSQLiteDb();
@@ -2735,7 +2735,7 @@ Respond ONLY with valid JSON.`;
     console.error('[DB] Activity tracker tables init failed:', e.message);
   }
 
-  // ═══ AI ANALYZE ACTIVITY (Vision-powered — Gemini sees the actual screenshot) ═══
+  // â•â•â• AI ANALYZE ACTIVITY (Vision-powered â€” Gemini sees the actual screenshot) â•â•â•
   app.post('/api/ai/analyze-activity', async (req: any, res: any) => {
     try {
       const {
@@ -2756,7 +2756,7 @@ Respond ONLY with valid JSON.`;
       const prevStr = previous_activity ? `\nPrevious activity: ${previous_activity}` : '';
       const idleStr = idleSeconds > 60 ? `\nUser idle for ${idleSeconds}s.` : '';
       const tickStr = ticketNumber ? `\nActive ticket: ${ticketNumber}` : '';
-      const clickStr = recentClicks?.length ? `\nRecent clicks: ${recentClicks.join(' → ')}` : '';
+      const clickStr = recentClicks?.length ? `\nRecent clicks: ${recentClicks.join(' â†’ ')}` : '';
       const keyStr = recentKeys > 0 ? `\nKeystrokes: ${recentKeys}` : '';
       const headStr = headings?.length ? `\nPage headings: ${headings.join(' | ')}` : '';
       const formStr = formData && Object.keys(formData).length
@@ -2784,10 +2784,10 @@ Page: ${pageType || pageUrl}
 Page title: ${pageTitle || 'unknown'}${tickStr}${prevStr}${idleStr}${clickStr}${keyStr}${headStr}${formStr}${textStr}
 
 EXAMPLES:
-Screenshot showing ChatGPT in Chrome → {"app":"Google Chrome","website":"ChatGPT","activity":"Browsing","description":"Interacting with ChatGPT to generate and review responses","confidence":0.95}
-VS Code editor open → {"app":"Visual Studio Code","website":null,"activity":"Coding","description":"Developing and editing source code in the IDE","confidence":0.93}
-Microsoft Word document → {"app":"Microsoft Word","website":null,"activity":"Documentation","description":"Writing and editing a document in Microsoft Word","confidence":0.90}
-Unclear screen → {"app":"Unknown","website":null,"activity":"Unclear","description":"User activity could not be determined from the screen","confidence":0.40}
+Screenshot showing ChatGPT in Chrome â†’ {"app":"Google Chrome","website":"ChatGPT","activity":"Browsing","description":"Interacting with ChatGPT to generate and review responses","confidence":0.95}
+VS Code editor open â†’ {"app":"Visual Studio Code","website":null,"activity":"Coding","description":"Developing and editing source code in the IDE","confidence":0.93}
+Microsoft Word document â†’ {"app":"Microsoft Word","website":null,"activity":"Documentation","description":"Writing and editing a document in Microsoft Word","confidence":0.90}
+Unclear screen â†’ {"app":"Unknown","website":null,"activity":"Unclear","description":"User activity could not be determined from the screen","confidence":0.40}
 
 RULES:
 - Do NOT guess random apps
@@ -2798,12 +2798,12 @@ RULES:
 - Be accurate over creative, concise, consistent
 - Prefer clarity over assumption
 
-OUTPUT FORMAT (STRICT JSON — no markdown, no extra text):
+OUTPUT FORMAT (STRICT JSON â€” no markdown, no extra text):
 {"app":"Application Name","website":"Website Name or null","activity":"Activity Type","description":"Short professional description","confidence":0.0}`;
 
       const ai = new GoogleGenAI({ apiKey });
 
-      // ── Vision mode: send screenshot image to Gemini ──
+      // â”€â”€ Vision mode: send screenshot image to Gemini â”€â”€
       let contents: any;
 
       if (screenshot_url) {
@@ -2847,7 +2847,7 @@ OUTPUT FORMAT (STRICT JSON — no markdown, no extra text):
       try { parsed = JSON.parse(raw); }
       catch { parsed = activityFallback(previous_activity, pageUrl, pageType, idleSeconds, appName, ticketNumber); }
 
-      // Map new format fields → response
+      // Map new format fields â†’ response
       const detectedApp = parsed.app || parsed.detected_app || appName || null;
       const detectedWebsite = parsed.website || parsed.detected_website || null;
       const activityLabel = parsed.activity || 'General Work';
@@ -2906,7 +2906,7 @@ OUTPUT FORMAT (STRICT JSON — no markdown, no extra text):
     return { activity: 'General Work', description: `Working in ${app_} on the ${page} page.`, confidence: 0.6 };
   }
 
-  // ═══ AI GENERATE SUMMARY ═══
+  // â•â•â• AI GENERATE SUMMARY â•â•â•
   app.post('/api/ai/generate-summary', async (req: any, res: any) => {
     try {
       const { session_data, duration_seconds } = req.body;
@@ -2941,7 +2941,7 @@ INSTRUCTIONS:
 - Note any task transitions or variety in work
 - Use past tense, professional tone
 - Do NOT use bullet points
-- Be specific — mention app names and activity types from the log above
+- Be specific â€” mention app names and activity types from the log above
 
 EXAMPLE OUTPUT:
 "The user spent the session developing code in VS Code and reviewing pull requests on GitHub. They also interacted with ChatGPT for AI assistance and reviewed incident tickets in Connect IT. The session showed a productive mix of development and support activities."
@@ -2962,7 +2962,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
     }
   });
 
-  // ═══ ACTIVITY SESSIONS CRUD ═══
+  // â•â•â• ACTIVITY SESSIONS CRUD â•â•â•
   app.post('/api/activity-sessions', async (req: any, res: any) => {
     try {
       const { session_id, user_id, user_name, start_time, status } = req.body;
@@ -3010,7 +3010,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
     }
   });
 
-  // ═══ ACTIVITY ENTRIES CRUD ═══
+  // â•â•â• ACTIVITY ENTRIES CRUD â•â•â•
     app.post('/api/activity-entries', async (req: any, res: any) => {
     try {
       const { session_id, user_id, screenshot_url, screenshot_filename, screenshot_format,
@@ -3067,7 +3067,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
     }
   });
 
-  // ═══ SCREENSHOT UPLOAD ═══
+  // â•â•â• SCREENSHOT UPLOAD â•â•â•
   // Ensure uploads directory exists
   const uploadsDir = path.join(__dirname, 'public', 'uploads', 'screenshots');
   if (!fs.existsSync(uploadsDir)) {
@@ -3125,7 +3125,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
   app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
   app.use('/captures', express.static(path.join(__dirname, 'public', 'captures')));
 
-  // ═══ GLOBAL INPUT TRACKING ═══
+  // â•â•â• GLOBAL INPUT TRACKING â•â•â•
   let globalKeystrokes = 0;
   let globalClicks = 0;
   
@@ -3145,7 +3145,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
     });
   });
 
-  // ═══ SCREEN CAPTURE API (OS-LEVEL) ═══
+  // â•â•â• SCREEN CAPTURE API (OS-LEVEL) â•â•â•
   app.get('/api/capture-screen', async (req, res) => {
     let scriptPath: string | null = null;
     try {
@@ -3247,7 +3247,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
     }
   });
 
-  // ═══ MASTER DATA APIS ═══
+  // â•â•â• MASTER DATA APIS â•â•â•
 
   const VALID_MASTER_TABLES = [
     'mst_groups', 'mst_statuses', 'mst_roles', 'mst_departments', 
@@ -3387,7 +3387,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
     }
   });
 
-  // ═══ AI GENERATE NOTES (for Work Notes Chat) ═══
+  // â•â•â• AI GENERATE NOTES (for Work Notes Chat) â•â•â•
   app.post('/api/ai/generate-notes', async (req: any, res: any) => {
     try {
       const {
@@ -3413,7 +3413,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
       const durationStr = durationSeconds
         ? `\nSession duration: ${Math.floor(durationSeconds / 3600)}h ${Math.floor((durationSeconds % 3600) / 60)}m ${durationSeconds % 60}s`
         : '';
-      const ticketStr = ticketNumber ? `\nTicket: ${ticketNumber}${ticketTitle ? ` — ${ticketTitle}` : ''}` : '';
+      const ticketStr = ticketNumber ? `\nTicket: ${ticketNumber}${ticketTitle ? ` â€” ${ticketTitle}` : ''}` : '';
 
       const prompt = `You are an IT service management work notes assistant. Generate a concise, professional 1-2 sentence work note for a technician who is ${actionStr} a work session.
 
@@ -3481,7 +3481,7 @@ Respond with ONLY a JSON object: {"note": "your note here"}`;
     }
   }
 
-  // ═══ WORK NOTES CRUD ═══
+  // â•â•â• WORK NOTES CRUD â•â•â•
   app.post('/api/work-notes', async (req: any, res: any) => {
     try {
       const {
@@ -3552,7 +3552,7 @@ Respond with ONLY a JSON object: {"note": "your note here"}`;
     }
   });
 
-  // ═══ MESSAGE HISTORY CRUD ═══
+  // â•â•â• MESSAGE HISTORY CRUD â•â•â•
   app.post('/api/message-history', async (req: any, res: any) => {
     try {
       const { user_id, user_name, message_type, recipient, message_content } = req.body;
@@ -3730,19 +3730,19 @@ Respond in a conversational, friendly tone.`;
     const msg = message.toLowerCase();
     
     if (msg.includes("ticket") || msg.includes("incident") || msg.includes("inc")) {
-      return `I can definitely help you with tickets! 🎫\n\nIf you want to create a new ticket, you can navigate to the **Incident** section in the sidebar and click **Create New Incident**.\n\nCould you please provide the title and a short description of the issue you are experiencing so I can assist you better?`;
+      return `I can definitely help you with tickets! ðŸŽ«\n\nIf you want to create a new ticket, you can navigate to the **Incident** section in the sidebar and click **Create New Incident**.\n\nCould you please provide the title and a short description of the issue you are experiencing so I can assist you better?`;
     }
     if (msg.includes("sla") || msg.includes("deadline") || msg.includes("breach")) {
-      return `Service Level Agreements (SLAs) are actively monitored in our system! ⏰\n\n- **Response Deadline:** The maximum time allocated for our support team to register and respond to your ticket.\n- **Resolution Deadline:** The maximum time allocated to fully resolve the issue.\n\nOur system automatically escalates tickets that are **At Risk** or **Breached** to ensure high-priority resolution. Is there a specific incident number you'd like me to look up?`;
+      return `Service Level Agreements (SLAs) are actively monitored in our system! â°\n\n- **Response Deadline:** The maximum time allocated for our support team to register and respond to your ticket.\n- **Resolution Deadline:** The maximum time allocated to fully resolve the issue.\n\nOur system automatically escalates tickets that are **At Risk** or **Breached** to ensure high-priority resolution. Is there a specific incident number you'd like me to look up?`;
     }
     if (msg.includes("network") || msg.includes("wifi") || msg.includes("internet") || msg.includes("offline")) {
-      return `Network connectivity issues can be frustrating! Let's troubleshoot: 🌐\n\n1. **Check Physical Connections:** Ensure all ethernet cables are plugged in securely.\n2. **Reset Adapter:** Turn your Wi-Fi adapter off and on again.\n3. **DNS Flush:** Try opening a terminal/command prompt and run \`ipconfig /flushdns\`.\n\nIf the issue persists, please let me know if this is affecting multiple users so I can guide you on creating a high-priority incident.`;
+      return `Network connectivity issues can be frustrating! Let's troubleshoot: ðŸŒ\n\n1. **Check Physical Connections:** Ensure all ethernet cables are plugged in securely.\n2. **Reset Adapter:** Turn your Wi-Fi adapter off and on again.\n3. **DNS Flush:** Try opening a terminal/command prompt and run \`ipconfig /flushdns\`.\n\nIf the issue persists, please let me know if this is affecting multiple users so I can guide you on creating a high-priority incident.`;
     }
     if (msg.includes("password") || msg.includes("login") || msg.includes("reset") || msg.includes("account")) {
-      return `Account and password resets are handled securely. 🔐\n\nTo reset your password:\n1. Click on **Settings** in the sidebar.\n2. Select your profile settings to update your credentials securely.\n\nIf you are locked out of your account entirely, please let me know, and I can walk you through the administrator recovery procedure!`;
+      return `Account and password resets are handled securely. ðŸ”\n\nTo reset your password:\n1. Click on **Settings** in the sidebar.\n2. Select your profile settings to update your credentials securely.\n\nIf you are locked out of your account entirely, please let me know, and I can walk you through the administrator recovery procedure!`;
     }
     if (msg.includes("php") || msg.includes("code") || msg.includes("react") || msg.includes("typescript")) {
-      return `I'd love to help you write or debug code! 💻\n\nHere is a quick example of clean TypeScript/React:
+      return `I'd love to help you write or debug code! ðŸ’»\n\nHere is a quick example of clean TypeScript/React:
 \`\`\`typescript
 interface UserProps {
   name: string;
@@ -3761,7 +3761,7 @@ export function UserProfile({ name, role }: UserProps) {
 What specific logic or programming language are we working with today?`;
     }
     if (msg.includes("hello") || msg.includes("hi") || msg.includes("hey") || msg.includes("kiru")) {
-      return `Hello! 👋 I'm **Kiru**, your intelligent IT service management assistant.\n\nI can help you with:\n- Troubleshooting IT issues (Network, WiFi, Software, etc.)\n- Explaining SLAs and Ticket management\n- System Navigation & Settings\n\nHow can I help you today?`;
+      return `Hello! ðŸ‘‹ I'm **Kiru**, your intelligent IT service management assistant.\n\nI can help you with:\n- Troubleshooting IT issues (Network, WiFi, Software, etc.)\n- Explaining SLAs and Ticket management\n- System Navigation & Settings\n\nHow can I help you today?`;
     }
     
     return `That's an interesting question! As **Kiru**, your IT assistant, I'm here to ensure everything runs smoothly.\n\nTo give you the most accurate help, could you provide a bit more context or detail about what you are trying to accomplish? I can troubleshoot technical issues, guide you through tickets, or explain system policies!`;
@@ -3838,6 +3838,384 @@ Respond in a conversational, friendly tone.`,
     }
   });
 
+  // GET /api/companies GÇô List all companies
+  app.get("/api/companies", async (req, res) => {
+    try {
+      const rows = await query("SELECT * FROM companies ORDER BY name ASC");
+      res.json(rows.map(mapCompanyRow));
+    } catch (error: any) {
+      console.error("[Companies] GET all error:", error.message);
+      // If table doesn't exist yet, return empty array
+      res.json([]);
+    }
+  });
+
+  // GET /api/companies/:id GÇô Get single company
+  app.get("/api/companies/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const rows = await query("SELECT * FROM companies WHERE id = ?", [id]);
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      res.json(mapCompanyRow(rows[0]));
+    } catch (error: any) {
+      console.error("[Companies] GET by ID error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // POST /api/companies GÇô Create new company
+  app.post("/api/companies", async (req, res) => {
+    try {
+      const b = req.body;
+      console.log("[Companies] Creating company:", b.name);
+      const result = await execute(
+        `INSERT INTO companies (name, contact_name, phone, email, address1, address2, city, province, postal_code, country, website, logo_url, type, status, email_integration_id, primary_color, secondary_color, support_signature, industry, priority_tier, default_assignment_group, default_sla_policy, default_support_mailbox)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          b.name?.trim() || "", b.contactName || "", b.phone || "", b.email || "",
+          b.address1 || "", b.address2 || "", b.city || "", b.province || "",
+          b.postalCode || "", b.country || "", b.website || "", b.logoUrl || "",
+          b.type || "Customer", b.status || "Active", b.email_integration_id || "",
+          b.primaryColor || "", b.secondaryColor || "", b.supportSignature || "",
+          b.industry || "", b.priorityTier || "", b.defaultAssignmentGroup || "",
+          b.defaultSlaPolicy || "", b.defaultSupportMailbox || ""
+        ]
+      );
+      const newId = result.insertId;
+
+      // Audit: record creation
+      await execute(
+        "INSERT INTO company_history (company_id, action, new_value, user) VALUES (?, 'created', ?, ?)",
+        [newId, b.name?.trim() || "", "System"]
+      );
+
+      // Return the created company
+      const rows = await query("SELECT * FROM companies WHERE id = ?", [newId]);
+      console.log("[Companies] Created company ID:", newId);
+      res.status(201).json(mapCompanyRow(rows[0]));
+    } catch (error: any) {
+      console.error("[Companies] POST error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // PUT /api/companies/:id GÇô Update company
+  app.put("/api/companies/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const b = req.body;
+      console.log("[Companies] Updating company:", id, b);
+
+      // Fetch old company for audit diff
+      const oldRows = await query("SELECT * FROM companies WHERE id = ?", [id]);
+      if (oldRows.length === 0) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      const old = oldRows[0];
+
+      await execute(
+        `UPDATE companies SET name=?, contact_name=?, phone=?, email=?, address1=?, address2=?, city=?, province=?, postal_code=?, country=?, website=?, logo_url=?, type=?, status=?, email_integration_id=?, primary_color=?, secondary_color=?, support_signature=?, industry=?, priority_tier=?, default_assignment_group=?, default_sla_policy=?, default_support_mailbox=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+        [
+          b.name?.trim() || old.name, b.contactName ?? old.contact_name, b.phone ?? old.phone,
+          b.email ?? old.email, b.address1 ?? old.address1, b.address2 ?? old.address2,
+          b.city ?? old.city, b.province ?? old.province, b.postalCode ?? old.postal_code,
+          b.country ?? old.country, b.website ?? old.website, b.logoUrl ?? old.logo_url,
+          b.type ?? old.type, b.status ?? old.status, b.email_integration_id ?? old.email_integration_id,
+          b.primaryColor ?? old.primary_color, b.secondaryColor ?? old.secondary_color,
+          b.supportSignature ?? old.support_signature, b.industry ?? old.industry,
+          b.priorityTier ?? old.priority_tier, b.defaultAssignmentGroup ?? old.default_assignment_group,
+          b.defaultSlaPolicy ?? old.default_sla_policy, b.defaultSupportMailbox ?? old.default_support_mailbox,
+          id
+        ]
+      );
+
+      // Audit: record specific field changes
+      const fieldMap: Record<string, [string, any, any]> = {
+        name: ["name", old.name, b.name],
+        contact_name: ["contactName", old.contact_name, b.contactName],
+        phone: ["phone", old.phone, b.phone],
+        email: ["email", old.email, b.email],
+        status: ["status", old.status, b.status],
+        type: ["type", old.type, b.type],
+        email_integration_id: ["email_integration_id", old.email_integration_id, b.email_integration_id],
+      };
+
+      let changedFields: string[] = [];
+      for (const [dbField, [, oldVal, newVal]] of Object.entries(fieldMap)) {
+        if (newVal !== undefined && String(newVal || "") !== String(oldVal || "")) {
+          const actionName = dbField === "email_integration_id" ? "assigned email integration"
+            : dbField === "status" && newVal === "Active" ? "activated"
+              : dbField === "status" && newVal === "Inactive" ? "deactivated"
+                : "updated";
+          await execute(
+            "INSERT INTO company_history (company_id, action, field_name, old_value, new_value, user) VALUES (?, ?, ?, ?, ?, ?)",
+            [id, actionName, dbField, String(oldVal || ""), String(newVal || ""), "System"]
+          );
+          changedFields.push(dbField);
+        }
+      }
+
+      // If no specific field changes detected, log a generic update
+      if (changedFields.length === 0) {
+        await execute(
+          "INSERT INTO company_history (company_id, action, old_value, new_value, user) VALUES (?, 'updated', 'details', 'details', 'System')",
+          [id]
+        );
+      }
+
+      const rows = await query("SELECT * FROM companies WHERE id = ?", [id]);
+      console.log("[Companies] Updated company:", id, "changed fields:", changedFields);
+      res.json(mapCompanyRow(rows[0]));
+    } catch (error: any) {
+      console.error("[Companies] PUT error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // DELETE /api/companies/:id
+  app.delete("/api/companies/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      console.log("Deleting company:", id);
+
+      // Fetch company first to validate name and integration status
+      const companyRows = await query("SELECT * FROM companies WHERE id = ?", [id]);
+      if (companyRows.length === 0) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      const company = companyRows[0];
+      const companyName = company.name;
+      const emailIntegrationId = company.email_integration_id;
+
+      // 1. Check if company has active tickets
+      const activeTickets = await query(
+        "SELECT COUNT(*) as count FROM tickets WHERE company_id = ? AND status NOT IN ('Closed', 'Resolved', 'closed', 'resolved')",
+        [id]
+      );
+      const ticketCount = activeTickets[0]?.count || 0;
+      if (ticketCount > 0) {
+        return res.status(400).json({ error: "Cannot delete company. Active tickets exist." });
+      }
+
+      // 2. Check if company is mapped to an Email Integration
+      let isMapped = false;
+      if (emailIntegrationId && String(emailIntegrationId).trim() !== "") {
+        isMapped = true;
+      } else {
+        const emailConfigs = await query(
+          "SELECT COUNT(*) as count FROM company_email_configs WHERE company_name = ?",
+          [companyName]
+        );
+        if ((emailConfigs[0]?.count || 0) > 0) {
+          isMapped = true;
+        }
+      }
+
+      if (isMapped) {
+        return res.status(400).json({ error: "Cannot delete company. Email integration is assigned." });
+      }
+
+      console.log("Delete validation passed");
+
+      await execute("DELETE FROM company_history WHERE company_id = ?", [id]);
+      await execute("DELETE FROM companies WHERE id = ?", [id]);
+
+      console.log("Company deleted successfully");
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[Companies] DELETE error:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // GET /api/companies/:id/tickets GÇô Tickets linked to a company
+  app.get("/api/companies/:id/tickets", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const rows = await query(
+        "SELECT id, ticket_number, title, status, priority, created_at FROM tickets WHERE company_id = ? ORDER BY created_at DESC",
+        [id]
+      );
+      res.json(rows.map((r: any) => ({
+        id: r.ticket_number || r.id.toString(),
+        title: r.title || "Untitled",
+        status: r.status || "New",
+        priority: r.priority || "4 - Low",
+        createdAt: r.created_at || new Date().toISOString(),
+        company: id
+      })));
+    } catch (error: any) {
+      console.error("[Companies] GET tickets error:", error.message);
+      res.json([]);
+    }
+  });
+
+  // GET /api/companies/:id/history GÇô Audit trail for a company
+  app.get("/api/companies/:id/history", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const rows = await query(
+        "SELECT * FROM company_history WHERE company_id = ? ORDER BY timestamp DESC",
+        [id]
+      );
+      res.json(rows.map((r: any) => ({
+        id: r.id,
+        company_id: r.company_id,
+        action: r.action,
+        field_name: r.field_name || "",
+        old_value: r.old_value || "",
+        new_value: r.new_value || "",
+        user: r.user || "System",
+        timestamp: r.timestamp
+      })));
+    } catch (error: any) {
+      console.error("[Companies] GET history error:", error.message);
+      res.json([]);
+    }
+  });
+
+  // GòÉGòÉGòÉ COMPANY EMAIL CONFIGURATIONS (Ultra Super Admin) GòÉGòÉGòÉ
+  app.get("/api/email-configs", async (req, res) => {
+    try {
+      const rows = await query("SELECT * FROM company_email_configs ORDER BY created_at DESC");
+      res.json(rows);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/email-configs", async (req, res) => {
+    try {
+      const data = req.body;
+      const fields = Object.keys(data);
+      const placeholders = fields.map(() => '?').join(', ');
+      const values = fields.map(k => data[k]);
+
+      // If setting as default, unset others
+      if (data.is_default) {
+        await execute("UPDATE company_email_configs SET is_default = 0");
+      }
+
+      const result = await execute(
+        `INSERT INTO company_email_configs (${fields.join(', ')}) VALUES (${placeholders})`,
+        values
+      );
+      res.json({ id: result.insertId, ...data });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/email-configs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+      const fields = Object.keys(data).filter(k => k !== 'id' && k !== 'created_at');
+      const setClause = fields.map(k => `${k} = ?`).join(', ');
+      const values = [...fields.map(k => data[k]), id];
+
+      if (data.is_default) {
+        await execute("UPDATE company_email_configs SET is_default = 0 WHERE id != ?", [id]);
+      }
+
+      await execute(`UPDATE company_email_configs SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, values);
+      res.json({ id, ...data });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/email-configs/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await execute("DELETE FROM company_email_configs WHERE id = ?", [id]);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/email-configs/test", async (req, res) => {
+    const config = req.body || {};
+
+    const smtp_user = config.smtp_user;
+    const smtp_pass = config.smtp_pass;
+    const imap_user = config.imap_user;
+    const imap_pass = config.imap_pass;
+
+    // Validate fields before connecting
+    if (!smtp_user || !smtp_pass || !imap_user || !imap_pass) {
+      console.error("[Email Test] Validation failed: Missing credentials.");
+      return res.status(400).json({
+        success: false,
+        error: "SMTP/IMAP username and password fields are required and cannot be empty."
+      });
+    }
+
+    try {
+      // 1. Test SMTP
+      console.log(`[Email Test] Testing SMTP: user=${smtp_user}, host=${config.smtp_host}:${config.smtp_port}`);
+      const transporter = nodemailer.createTransport({
+        host: config.smtp_host,
+        port: config.smtp_port,
+        secure: config.smtp_port === 465,
+        auth: { user: smtp_user, pass: smtp_pass },
+        tls: { rejectUnauthorized: false }
+      });
+
+      try {
+        await transporter.verify();
+        console.log("[Email Test] SMTP verification success!");
+      } catch (smtpError: any) {
+        console.error("[Email Test] SMTP verification failed:", smtpError);
+        return res.status(500).json({
+          success: false,
+          error: `SMTP connection failed: ${smtpError.message || smtpError}`
+        });
+      }
+
+      // 2. Test IMAP
+      console.log(`[Email Test] Testing IMAP: user=${imap_user}, host=${config.imap_host}:${config.imap_port}`);
+      const imapConfig = {
+        imap: {
+          user: imap_user,
+          password: imap_pass,
+          host: config.imap_host,
+          port: config.imap_port,
+          tls: config.encryption !== 'None',
+          tlsOptions: { rejectUnauthorized: false },
+          authTimeout: 10000,
+        }
+      };
+
+      try {
+        const connection = await imaps.connect(imapConfig);
+        connection.end();
+        console.log("[Email Test] IMAP verification success!");
+      } catch (imapError: any) {
+        console.error("[Email Test] IMAP verification failed:", imapError);
+        return res.status(500).json({
+          success: false,
+          error: `IMAP connection failed: ${imapError.message || imapError}`
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "SMTP and IMAP connections successful!"
+      });
+
+    } catch (error: any) {
+      console.error("[Email Test] Unexpected test error:", error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || "An unexpected error occurred during email testing."
+      });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -3858,19 +4236,153 @@ Respond in a conversational, friendly tone.`,
     return;
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", async () => {
+    try {
+      // Ensure email columns exist in tickets table
+      if (useSQLite) {
+        const db = await getSQLiteDb();
+        const columns = await db.all("PRAGMA table_info(tickets)");
+        const colNames = columns.map(c => c.name);
+        if (!colNames.includes("affected_user_email")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN affected_user_email TEXT");
+        }
+        if (!colNames.includes("reporting_user_email")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN reporting_user_email TEXT");
+        }
+        if (!colNames.includes("caller_email")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN caller_email TEXT");
+        }
+        if (!colNames.includes("resolution_code")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN resolution_code TEXT");
+        }
+        if (!colNames.includes("resolution_notes")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN resolution_notes TEXT");
+        }
+        if (!colNames.includes("resolution_method")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN resolution_method TEXT");
+        }
+        if (!colNames.includes("closure_reason")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN closure_reason TEXT");
+        }
+        if (!colNames.includes("resolved_by")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN resolved_by TEXT");
+        }
+        if (!colNames.includes("company_id")) {
+          await db.exec("ALTER TABLE tickets ADD COLUMN company_id TEXT");
+        }
+
+        // SQLite companies table updates
+        const companyColumns = await db.all("PRAGMA table_info(companies)");
+        const compColNames = companyColumns.map(c => c.name);
+        if (!compColNames.includes("primary_color")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN primary_color TEXT");
+        }
+        if (!compColNames.includes("secondary_color")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN secondary_color TEXT");
+        }
+        if (!compColNames.includes("support_signature")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN support_signature TEXT");
+        }
+        if (!compColNames.includes("industry")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN industry TEXT");
+        }
+        if (!compColNames.includes("priority_tier")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN priority_tier TEXT");
+        }
+        if (!compColNames.includes("default_assignment_group")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN default_assignment_group TEXT");
+        }
+        if (!compColNames.includes("default_sla_policy")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN default_sla_policy TEXT");
+        }
+        if (!compColNames.includes("default_support_mailbox")) {
+          await db.exec("ALTER TABLE companies ADD COLUMN default_support_mailbox TEXT");
+        }
+      } else {
+        const checkSql = "SHOW COLUMNS FROM tickets LIKE 'affected_user_email'";
+        const cols = await query(checkSql);
+        if (cols.length === 0) {
+          await execute("ALTER TABLE tickets ADD COLUMN affected_user_email VARCHAR(255)");
+          await execute("ALTER TABLE tickets ADD COLUMN reporting_user_email VARCHAR(255)");
+          await execute("ALTER TABLE tickets ADD COLUMN caller_email VARCHAR(255)");
+        }
+        const checkResCode = await query("SHOW COLUMNS FROM tickets LIKE 'resolution_code'");
+        if (checkResCode.length === 0) {
+          await execute("ALTER TABLE tickets ADD COLUMN resolution_code VARCHAR(255)");
+          await execute("ALTER TABLE tickets ADD COLUMN resolution_notes TEXT");
+          await execute("ALTER TABLE tickets ADD COLUMN resolution_method VARCHAR(255)");
+          await execute("ALTER TABLE tickets ADD COLUMN closure_reason VARCHAR(255)");
+          await execute("ALTER TABLE tickets ADD COLUMN resolved_by VARCHAR(255)");
+        }
+        const checkCompanyId = await query("SHOW COLUMNS FROM tickets LIKE 'company_id'");
+        if (checkCompanyId.length === 0) {
+          await execute("ALTER TABLE tickets ADD COLUMN company_id VARCHAR(255)");
+        }
+
+        // Check and add columns for companies in MySQL
+        const checkCompColumns = async (col: string, type: string) => {
+          try {
+            const cols = await query(`SHOW COLUMNS FROM companies LIKE '${col}'`);
+            if (cols.length === 0) {
+              await execute(`ALTER TABLE companies ADD COLUMN ${col} ${type}`);
+            }
+          } catch (e) {
+            console.error(`Failed to add column ${col} to companies:`, e);
+          }
+        };
+        await checkCompColumns("primary_color", "VARCHAR(50)");
+        await checkCompColumns("secondary_color", "VARCHAR(50)");
+        await checkCompColumns("support_signature", "TEXT");
+        await checkCompColumns("industry", "VARCHAR(255)");
+        await checkCompColumns("priority_tier", "VARCHAR(50)");
+        await checkCompColumns("default_assignment_group", "VARCHAR(255)");
+        await checkCompColumns("default_sla_policy", "VARCHAR(255)");
+        await checkCompColumns("default_support_mailbox", "VARCHAR(255)");
+      }
+      console.log("[DB Migration] Email columns verified/added to tickets table.");
+
+      // REQUIRED FIX 6 GÇö CLEAN EXISTING BAD ACTIVITIES
+      try {
+        if (useSQLite) {
+          const db = await getSQLiteDb();
+          await db.exec(`
+            DELETE FROM ticket_activities
+            WHERE message LIKE '%response deadline%'
+            OR message LIKE '%resolution deadline%'
+            OR message LIKE '%SLA%'
+          `);
+        } else {
+          await execute(`
+            DELETE FROM ticket_activities
+            WHERE message LIKE '%response deadline%'
+            OR message LIKE '%resolution deadline%'
+            OR message LIKE '%SLA%'
+          `);
+        }
+        console.log("[DB Migration] Cleaned existing SLA activity noise.");
+      } catch (dbCleanErr: any) {
+        console.error("[DB Migration] Failed to clean legacy SLA noise:", dbCleanErr.message || dbCleanErr);
+      }
+    } catch (e: any) {
+      console.error("[DB Migration] Failed to run database migrations/alter table:", e.message);
+    }
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`[MySQL] Database: ${dbConfig.database} at ${dbConfig.host}:${dbConfig.port}`);
-    
-    // OmniChannel polling
-    console.log('[OmniChannel] Polling emails...');
+
+    // OmniChannel polling GÇö initial poll on startup
+    console.log('[OmniChannel] Initial email poll...');
     OmniChannelEngine.pollIncomingEmails();
-    
+
+    // Recurring IMAP poll every 60 seconds
+    cron.schedule('*/60 * * * * *', () => {
+      console.log('[OmniChannel] Scheduled IMAP poll...');
+      OmniChannelEngine.pollIncomingEmails();
+    });
+
     cron.schedule('*/30 * * * * *', () => {
-      console.log('[OmniChannel] Processing notification queue...');
       OmniChannelEngine.processNotificationQueue();
     });
-    
+
     cron.schedule('0 * * * *', () => {
       console.log('[SLAEngine] Monitoring SLA breaches...');
       SLAEngine.monitorBreaches();
