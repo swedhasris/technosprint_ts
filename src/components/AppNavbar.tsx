@@ -151,20 +151,8 @@ export function AppNavbar() {
       <div className="flex items-center gap-4">
 
         {/* ── Global AI Activity Tracker Toggle ── */}
-        <div className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 transition-all duration-300 ${
-          isActive
-            ? 'bg-green-50 border-green-300 shadow-sm shadow-green-100'
-            : 'bg-muted/40 border-border'
-        }`}>
-          {isActive && (
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block flex-shrink-0" />
-          )}
-          {isActive && (
-            <span className="font-mono text-xs font-bold text-green-700 tabular-nums min-w-[3.5rem]">
-              {fmtHMS(elapsed)}
-            </span>
-          )}
-          {!isActive ? (
+        {!isActive ? (
+          <div className="flex items-center gap-2 rounded-xl border px-3 py-1.5 transition-all duration-300 bg-muted/40 border-border">
             <button
               id="global-ai-tracker-start"
               onClick={() => startWatcher()}
@@ -174,18 +162,18 @@ export function AppNavbar() {
               <Play className="w-3.5 h-3.5 fill-green-600 text-green-600" />
               <span className="hidden sm:inline">Start Tracker</span>
             </button>
-          ) : (
-            <button
-              id="global-ai-tracker-stop"
-              onClick={() => stopWatcher()}
-              title="Stop AI Activity Tracker"
-              className="flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
-            >
-              <Square className="w-3.5 h-3.5 fill-red-500 text-red-500" />
-              <span className="hidden sm:inline">Stop</span>
-            </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <button
+            id="global-ai-tracker-stop"
+            onClick={() => stopWatcher()}
+            title="Stop AI Activity Tracker"
+            className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors"
+          >
+            <Square className="w-3.5 h-3.5 fill-current text-current" />
+            <span className="hidden sm:inline">Stop Tracker</span>
+          </button>
+        )}
 
         {/* Theme Toggle & Brightness Control Container */}
         <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-1">

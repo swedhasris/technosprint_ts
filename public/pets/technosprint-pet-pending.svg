@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="shell" x1="18%" y1="10%" x2="82%" y2="92%"><stop offset="0%" stop-color="#fff"/><stop offset="55%" stop-color="#eef3ff"/><stop offset="100%" stop-color="#cbd6e8"/></linearGradient>
+    <linearGradient id="blue" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#60dfff"/><stop offset="45%" stop-color="#2388ff"/><stop offset="100%" stop-color="#2957da"/></linearGradient>
+    <linearGradient id="visor" x1="50%" y1="8%" x2="50%" y2="100%"><stop offset="0%" stop-color="#151c2a"/><stop offset="100%" stop-color="#03070d"/></linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="55%"><stop offset="0%" stop-color="#268cff" stop-opacity=".28"/><stop offset="100%" stop-color="#268cff" stop-opacity="0"/></radialGradient>
+    <filter id="faceGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <ellipse cx="90" cy="170" rx="38" ry="8" fill="#09111f" opacity=".16"/>
+  <g transform="translate(110 16) rotate(38)"><rect x="-9" y="0" width="18" height="38" rx="9" fill="url(#blue)"/><rect x="-6" y="3" width="12" height="28" rx="6" fill="#9cecff" opacity=".28"/></g>
+  <ellipse cx="42" cy="82" rx="13" ry="19" fill="url(#blue)"/>
+  <ellipse cx="138" cy="82" rx="13" ry="19" fill="url(#blue)"/>
+  <path d="M 46 75 C 46 42, 66 30, 90 30 C 114 30, 134 42, 134 75 C 134 101, 117 121, 90 121 C 63 121, 46 101, 46 75 Z" fill="url(#shell)"/>
+  <path d="M 56 70 C 56 52, 69 43, 90 43 C 111 43, 124 52, 124 70 L 124 84 C 124 103, 112 113, 90 113 C 68 113, 56 103, 56 84 Z" fill="url(#visor)"/>
+  <ellipse cx="90" cy="78" rx="31" ry="25" fill="url(#glow)"/>
+  <g transform="translate(95 62)"><path d="M 0 0 C -8 -8 -16 -8 -16 0 C -16 8 -8 8 0 0 C 8 -8 16 -8 16 0 C 16 8 8 8 0 0 Z" fill="none" stroke="url(#blue)" stroke-width="5" stroke-linecap="round" filter="url(#faceGlow)"/><rect x="-10" y="-13" width="5" height="5" fill="#74e4ff" transform="rotate(45 -7.5 -10.5)" filter="url(#faceGlow)"/></g>
+  <circle cx="73" cy="90" r="4" fill="#37caff" filter="url(#faceGlow)"/>
+  <path d="M 100 92 C 104 86, 112 86, 117 92" fill="none" stroke="#37caff" stroke-width="6" stroke-linecap="round" filter="url(#faceGlow)"/>
+  <path d="M 84 103 C 88 101, 92 101, 96 103" fill="none" stroke="#37caff" stroke-width="5.4" stroke-linecap="round" filter="url(#faceGlow)"/>
+  <ellipse cx="90" cy="124" rx="18" ry="4.5" fill="#07111f" opacity=".7"/>
+  <path d="M 61 123 C 61 111, 70 105, 90 105 C 110 105, 119 111, 119 123 L 119 151 C 119 161, 109 167, 90 167 C 71 167, 61 161, 61 151 Z" fill="url(#shell)"/>
+  <g transform="translate(90 141)"><path d="M 0 0 C -8 -8 -16 -8 -16 0 C -16 8 -8 8 0 0 C 8 -8 16 -8 16 0 C 16 8 8 8 0 0 Z" fill="none" stroke="url(#blue)" stroke-width="4.8" stroke-linecap="round"/><rect x="-10" y="-13" width="5" height="5" fill="#74e4ff" transform="rotate(45 -7.5 -10.5)"/></g>
+  <path d="M 62 132 C 50 135, 47 147, 52 161" fill="none" stroke="url(#shell)" stroke-width="14" stroke-linecap="round"/><circle cx="52" cy="161" r="7" fill="#fff"/>
+  <path d="M 118 131 C 125 127, 127 118, 117 111" fill="none" stroke="url(#shell)" stroke-width="14" stroke-linecap="round"/><circle cx="114" cy="108" r="7" fill="#fff"/>
+</svg>

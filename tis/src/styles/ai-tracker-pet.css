@@ -1,0 +1,297 @@
+/* ═══════════════════════════════════════════════════════════════
+   AI TRACKER PET — Pure Mascot Floating Styling
+   All components use GPU transform and transparent filters.
+   Zero layout cost.
+ ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Hover Controls ─── */
+.atp-hover-controls {
+  position: absolute;
+  top: -24px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: 10005;
+}
+
+#ai-tracker-pet-root:hover .atp-hover-controls {
+  opacity: 1;
+}
+
+.atp-btn {
+  background: rgba(11, 20, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.atp-btn:hover {
+  background: rgba(59, 130, 246, 0.85);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.atp-btn.locked {
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+}
+
+/* ─── Glassmorphic Hover Tooltip Speech Bubble ─── */
+.atp-hover-tooltip {
+  position: absolute;
+  bottom: 110%; /* position above wrapper */
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  width: 180px;
+  background: rgba(11, 20, 26, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 8px 12px;
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.65),
+    0 0 1px rgba(255, 255, 255, 0.2) inset;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 10000;
+}
+
+.atp-hover-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(11, 20, 26, 0.92) transparent transparent transparent;
+}
+
+#ai-tracker-pet-root:hover .atp-hover-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0px);
+}
+
+.atp-tooltip-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.025em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.atp-tooltip-sub {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Heartbeat Dot ─── */
+.atp-heartbeat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  display: inline-block;
+  margin-right: 4px;
+  box-shadow: 0 0 6px #10B981;
+  animation: atp-excited 0.8s ease-in-out infinite;
+}
+
+/* ─── Body Wrapper ─── */
+.atp-body-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.atp-img-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid var(--ring-color, #10B981);
+  background: radial-gradient(circle at center, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.9) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 
+    0 0 20px var(--ring-color, #10B981),
+    inset 0 0 10px var(--ring-color, #10B981),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  width: 96px;
+  height: 96px;
+}
+
+.atp-pet-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  transition: opacity 0.4s ease, filter 0.4s ease;
+  transform-origin: center center;
+  z-index: 2;
+}
+
+.atp-specular {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.7), transparent 70%);
+  transform: rotate(-18deg);
+  opacity: 0.2;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.atp-rim {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.4), transparent);
+  filter: blur(1.5px);
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.atp-shadow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.4), transparent);
+  filter: blur(3.5px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ─── Tick Overlay Badge ─── */
+.atp-tick-badge {
+  position: absolute;
+  background: #10B981;
+  color: white;
+  border-radius: 50%;
+  border: 1.5px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+  animation: atp-appear-scale 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  z-index: 10;
+}
+
+/* ─── Keyframe Animations ─── */
+@keyframes atp-walk {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scaleX(1); }
+  20%     { transform: translateY(-5px) rotate(-2deg) scaleX(1.02); }
+  50%     { transform: translateY(-1px) rotate(0deg) scaleX(1); }
+  75%     { transform: translateY(-6px) rotate(2deg) scaleX(1.02); }
+}
+
+@keyframes atp-sleep {
+  0%, 100% { transform: rotate(0deg) translateY(0px) brightness(0.65); filter: saturate(0.5); opacity: 0.8; }
+  50%     { transform: rotate(4deg) translateY(4px) brightness(0.65); filter: saturate(0.5); opacity: 0.8; }
+}
+
+@keyframes atp-celebrate {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+  15%     { transform: translateY(-12px) rotate(-10deg) scale(1.12); }
+  35%     { transform: translateY(-8px)  rotate(8deg)  scale(1.08); }
+  55%     { transform: translateY(-18px) rotate(-6deg) scale(1.14); }
+  75%     { transform: translateY(-5px)  rotate(5deg)  scale(1.06); }
+  90%     { transform: translateY(-10px) rotate(-3deg) scale(1.09); }
+}
+
+@keyframes atp-think {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  30%     { transform: translateY(-4px) rotate(-4deg); }
+  70%     { transform: translateY(-3px) rotate(4deg); }
+}
+
+@keyframes atp-sit {
+  0%, 100% { transform: scaleY(1) translateY(0px); }
+  50%     { transform: scaleY(0.88) translateY(4px); }
+}
+
+@keyframes atp-warning {
+  0%, 100% { transform: translateX(0px) rotate(0deg); }
+  20%     { transform: translateX(-6px) rotate(-4deg); }
+  40%     { transform: translateX(6px) rotate(4deg); }
+  60%     { transform: translateX(-4px) rotate(-2deg); }
+  80%     { transform: translateX(4px) rotate(2deg); }
+}
+
+@keyframes atp-observe {
+  0%, 100% { transform: translateX(0px) rotate(0deg); }
+  30%     { transform: translateX(-4px) rotate(-1deg); }
+  70%     { transform: translateX(4px) rotate(1deg); }
+}
+
+@keyframes atp-happy {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%     { transform: translateY(-6px) scale(1.05); }
+}
+
+@keyframes atp-appear-scale {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes atp-fade-in {
+  from { opacity: 0; transform: scale(0.7) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0px); }
+}
+
+@keyframes atp-fade-out {
+  from { opacity: 1; transform: scale(1) translateY(0px); }
+  to   { opacity: 0; transform: scale(0.4) translateY(30px); }
+}
+
+.atp-pet-appear { animation: atp-fade-in 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.atp-pet-disappear { animation: atp-fade-out 0.4s ease-in forwards; }
+
+.atp-walk { animation: atp-walk 0.65s ease-in-out infinite; }
+.atp-sleep { animation: atp-sleep 3.2s ease-in-out infinite; }
+.atp-celebrate { animation: atp-celebrate 0.85s ease-in-out infinite; }
+.atp-think { animation: atp-think 2.3s ease-in-out infinite; }
+.atp-sit { animation: atp-sit 1.6s ease-in-out infinite; }
+.atp-warning { animation: atp-warning 0.6s ease-in-out infinite; }
+.atp-observe { animation: atp-observe 3.1s ease-in-out infinite; }
+.atp-happy { animation: atp-happy 1.8s ease-in-out infinite; }
+
+/* Minimized scale transitions */
+#ai-tracker-pet-root.minimized .atp-hover-controls,
+#ai-tracker-pet-root.minimized .atp-hover-tooltip,
+#ai-tracker-pet-root.minimized .atp-shadow {
+  display: none !important;
+}

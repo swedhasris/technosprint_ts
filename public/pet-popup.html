@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Technosprint Pet — Activity Tracker</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       Technosprint Pet — Standalone Browser Popup
+       Stays visible even when the user navigates the main tab to
+       another website. Receives state via BroadcastChannel.
+       ═══════════════════════════════════════════════════════════════ */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --pet-scale: 1.0;
+      --pet-width: calc(115px * var(--pet-scale));
+      --pet-height: calc(115px * var(--pet-scale));
+      --ring-color: #10B981;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #0b141a;
+      overflow: hidden;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── Premium Floating Mascot Container ─── */
+    #pet-container {
+      position: relative;
+      width: var(--pet-width);
+      height: var(--pet-height);
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition:
+        width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+        height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      z-index: 999999;
+      transform-origin: center center;
+    }
+
+    #pet-container:active {
+      cursor: grabbing;
+    }
+
+    /* ─── Ring Glow around Mascot ─── */
+    .atp-img-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      padding: calc(6px * var(--pet-scale));
+      border: 2px solid var(--ring-color);
+      box-shadow:
+        0 0 calc(14px * var(--pet-scale)) var(--ring-color),
+        inset 0 0 calc(6px * var(--pet-scale)) var(--ring-color);
+      background: rgba(11, 20, 26, 0.45);
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    /* ─── Premium Glassmorphic Tooltip Speech Bubble ─── */
+    #pet-tooltip {
+      position: absolute;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      width: calc(200px * var(--pet-scale));
+      background: rgba(11, 20, 26, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: calc(8px * var(--pet-scale)) calc(12px * var(--pet-scale));
+      box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.65),
+        0 0 1px rgba(255, 255, 255, 0.2) inset;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 3px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      z-index: 10000;
+    }
+
+    #pet-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px;
+      border-style: solid;
+      border-color: rgba(11, 20, 26, 0.92) transparent transparent transparent;
+    }
+
+    #pet-container:hover #pet-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0px);
+    }
+
+    .atp-tooltip-title {
+      font-size: calc(10px * var(--pet-scale));
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.025em;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .atp-tooltip-sub {
+      font-size: calc(8px * var(--pet-scale));
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
+
+    /* ─── Heartbeat dot indicator ─── */
+    .atp-heartbeat-dot {
+      width: calc(6px * var(--pet-scale));
+      height: calc(6px * var(--pet-scale));
+      border-radius: 50%;
+      background: #10B981;
+      display: inline-block;
+      margin-right: 4px;
+      box-shadow: 0 0 6px #10B981;
+    }
+
+    /* ─── Body Mascot Display ─── */
+    #pet-body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .atp-pet-img {
+      width: calc(68px * var(--pet-scale));
+      height: calc(68px * var(--pet-scale));
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.35));
+      transition: opacity 0.4s ease, filter 0.4s ease;
+      transform-origin: center center;
+      z-index: 2;
+    }
+
+    .atp-specular {
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      width: calc(20px * var(--pet-scale));
+      height: calc(12px * var(--pet-scale));
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.7), transparent 70%);
+      transform: rotate(-18deg);
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .atp-rim {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(14px * var(--pet-scale));
+      height: calc(6px * var(--pet-scale));
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(255, 255, 255, 0.4), transparent);
+      filter: blur(1.5px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .atp-shadow {
+      position: absolute;
+      bottom: calc(-12px * var(--pet-scale));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(44px * var(--pet-scale));
+      height: calc(8px * var(--pet-scale));
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(0, 0, 0, 0.4), transparent);
+      filter: blur(3.5px);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* ─── Captured tick overlay badge ─── */
+    .atp-tick-badge {
+      position: absolute;
+      top: calc(-4px * var(--pet-scale));
+      right: calc(-4px * var(--pet-scale));
+      width: calc(20px * var(--pet-scale));
+      height: calc(20px * var(--pet-scale));
+      background: #10B981;
+      color: white;
+      border-radius: 50%;
+      border: 1.5px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(10px * var(--pet-scale));
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      animation: atp-appear 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      z-index: 10;
+    }
+
+    /* ─── Heartbeat Ring Pulse Animation ─── */
+    @keyframes heartbeat-pulse {
+      0% { transform: scale(1) translate(-50%, -50%); opacity: 1; }
+      100% { transform: scale(2.2) translate(-50%, -50%); opacity: 0; }
+    }
+
+    .heartbeat-pulse {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(75px * var(--pet-scale));
+      height: calc(75px * var(--pet-scale));
+      border-radius: 50%;
+      border: 3px solid #10B981;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .heartbeat-active {
+      animation: heartbeat-pulse 1.2s cubic-bezier(0.215, 0.610, 0.355, 1) forwards;
+    }
+
+    /* ─── Title bar drag area ─── */
+    #popup-title-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 24px;
+      background: linear-gradient(180deg, rgba(11,20,26,0.95) 0%, rgba(11,20,26,0.7) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      z-index: 100000;
+      cursor: default;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    #popup-title-bar .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 6px #10B981;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    #popup-title-bar .title-text {
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ─── Inactive / Disconnected overlay ─── */
+    #inactive-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11,20,26,0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      z-index: 200000;
+      transition: opacity 0.4s ease;
+    }
+
+    #inactive-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #inactive-overlay .inactive-icon {
+      font-size: 28px;
+      opacity: 0.4;
+    }
+
+    #inactive-overlay .inactive-text {
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ─── Mascot Keyframes ─── */
+    @keyframes atp-walk {
+      0%, 100% { transform: translateY(0px) rotate(0deg) scaleX(1); }
+      20%     { transform: translateY(-5px) rotate(-2deg) scaleX(1.02); }
+      50%     { transform: translateY(-1px) rotate(0deg) scaleX(1); }
+      75%     { transform: translateY(-6px) rotate(2deg) scaleX(1.02); }
+    }
+
+    @keyframes atp-sleep {
+      0%, 100% { transform: rotate(0deg) translateY(0px); filter: saturate(0.5); opacity: 0.8; }
+      50%     { transform: rotate(4deg) translateY(4px); filter: saturate(0.5); opacity: 0.8; }
+    }
+
+    @keyframes atp-celebrate {
+      0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+      15%     { transform: translateY(-12px) rotate(-10deg) scale(1.12); }
+      35%     { transform: translateY(-6px) rotate(8deg) scale(1.08); }
+      55%     { transform: translateY(-15px) rotate(-6deg) scale(1.14); }
+      75%     { transform: translateY(-4px) rotate(5deg) scale(1.06); }
+    }
+
+    @keyframes atp-think {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      30%     { transform: translateY(-4px) rotate(-4deg); }
+      70%     { transform: translateY(-3px) rotate(4deg); }
+    }
+
+    @keyframes atp-sit {
+      0%, 100% { transform: scaleY(1) translateY(0px); }
+      50%     { transform: scaleY(0.88) translateY(4px); }
+    }
+
+    @keyframes atp-warning {
+      0%, 100% { transform: translateX(0px) rotate(0deg); }
+      20%     { transform: translateX(-6px) rotate(-4deg); }
+      40%     { transform: translateX(6px) rotate(4deg); }
+      60%     { transform: translateX(-4px) rotate(-2deg); }
+      80%     { transform: translateX(4px) rotate(2deg); }
+    }
+
+    @keyframes atp-observe {
+      0%, 100% { transform: translateX(0px) rotate(0deg); }
+      30%     { transform: translateX(-4px) rotate(-1deg); }
+      70%     { transform: translateX(4px) rotate(1deg); }
+    }
+
+    @keyframes atp-happy {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50%     { transform: translateY(-6px) scale(1.05); }
+    }
+
+    @keyframes atp-appear {
+      from { opacity: 0; transform: scale(0.5); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .atp-walk { animation: atp-walk 0.65s ease-in-out infinite; }
+    .atp-sleep { animation: atp-sleep 3.2s ease-in-out infinite; }
+    .atp-celebrate { animation: atp-celebrate 0.85s ease-in-out infinite; }
+    .atp-think { animation: atp-think 2.3s ease-in-out infinite; }
+    .atp-sit { animation: atp-sit 1.6s ease-in-out infinite; }
+    .atp-warning { animation: atp-warning 0.6s ease-in-out infinite; }
+    .atp-observe { animation: atp-observe 3.1s ease-in-out infinite; }
+    .atp-happy { animation: atp-happy 1.8s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+  <!-- Slim title bar for context -->
+  <div id="popup-title-bar">
+    <span class="status-dot"></span>
+    <span class="title-text">Tracking Active</span>
+  </div>
+
+  <!-- Inactive overlay shown when tracker stops -->
+  <div id="inactive-overlay" class="hidden">
+    <span class="inactive-icon">😴</span>
+    <span class="inactive-text">Tracker Inactive</span>
+  </div>
+
+  <!-- Floating Mascot Container -->
+  <div id="pet-container">
+    <!-- Heartbeat Ring Pulse -->
+    <div id="heartbeat-ring" class="heartbeat-pulse"></div>
+
+    <!-- 3D Mascot Image Display -->
+    <div id="pet-body">
+      <div id="pet-wrapper" class="atp-img-wrapper">
+        <img id="pet-img" src="/assets/technosprint-pet/active.png" class="atp-pet-img atp-happy" alt="3D AI Pet" draggable="false">
+        <div id="pet-specular" class="atp-specular"></div>
+        <div id="pet-rim" class="atp-rim"></div>
+        <!-- Captured Tick Badge -->
+        <div id="pet-tick-badge" class="atp-tick-badge" style="display:none;">✓</div>
+      </div>
+      <div class="atp-shadow"></div>
+    </div>
+
+    <!-- Hover Speech Tooltip -->
+    <div id="pet-tooltip">
+      <span id="pet-tooltip-title" class="atp-tooltip-title">AI Activity Tracker Running</span>
+      <span id="pet-tooltip-sub" class="atp-tooltip-sub">
+        <span class="atp-heartbeat-dot"></span>Heartbeat Active
+      </span>
+    </div>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════════════
+       Pet Popup — BroadcastChannel Receiver
+       Receives tracker state updates from the main app tab and
+       updates the pet mascot's appearance, animations, and tooltips.
+       ═══════════════════════════════════════════════════════════════ */
+
+    const container = document.getElementById('pet-container');
+    const petImg = document.getElementById('pet-img');
+    const petWrapper = document.getElementById('pet-wrapper');
+    const petTooltipTitle = document.getElementById('pet-tooltip-title');
+    const petTooltipSub = document.getElementById('pet-tooltip-sub');
+    const petTickBadge = document.getElementById('pet-tick-badge');
+    const inactiveOverlay = document.getElementById('inactive-overlay');
+    const titleBarDot = document.querySelector('#popup-title-bar .status-dot');
+    const titleBarText = document.querySelector('#popup-title-bar .title-text');
+
+    // ─── BroadcastChannel for cross-tab communication ───
+    const channel = new BroadcastChannel('technosprint-pet-state');
+
+    // ─── State Colors ───
+    const stateColors = {
+      ACTIVE: '#10B981',
+      CAPTURED: '#10B981',
+      UPLOADING: '#3B82F6',
+      PROCESSING: '#F59E0B',
+      PAUSED: '#EAB308',
+      ERROR: '#EF4444',
+      DISCONNECTED: '#EF4444',
+      STOPPED: '#6B7280'
+    };
+
+    // ─── Tooltip Texts ───
+    const tooltipTexts = {
+      ACTIVE: 'AI Activity Tracker Running',
+      CAPTURED: 'Screenshot Captured Successfully',
+      UPLOADING: 'Uploading Activity',
+      PROCESSING: 'Processing Activity',
+      PAUSED: 'Tracker Paused',
+      ERROR: 'Tracker Error',
+      DISCONNECTED: 'Connection Lost',
+      STOPPED: 'Tracker Stopped'
+    };
+
+    // ─── Asset Map ───
+    const assetMap = {
+      ACTIVE: 'active',
+      CAPTURED: 'success',
+      UPLOADING: 'working',
+      PROCESSING: 'thinking',
+      PAUSED: 'waiting',
+      ERROR: 'alert',
+      DISCONNECTED: 'concerned',
+      STOPPED: 'waiting'
+    };
+
+    // ─── Animation Map ───
+    const animMap = {
+      ACTIVE: 'atp-happy',
+      CAPTURED: 'atp-celebrate',
+      UPLOADING: 'atp-walk',
+      PROCESSING: 'atp-think',
+      PAUSED: 'atp-sit',
+      ERROR: 'atp-warning',
+      DISCONNECTED: 'atp-observe',
+      STOPPED: 'atp-sleep'
+    };
+
+    // ─── Heartbeat Ring Pulse Trigger ───
+    function triggerHeartbeatPulse() {
+      const ring = document.getElementById('heartbeat-ring');
+      ring.classList.remove('heartbeat-active');
+      void ring.offsetWidth;
+      ring.classList.add('heartbeat-active');
+    }
+
+    // ─── Apply State ───
+    function applyState(data) {
+      if (!data) return;
+
+      const isActive = Boolean(data.visible);
+      const state = data.trackerState || 'STOPPED';
+
+      // Show/hide inactive overlay
+      if (!isActive || state === 'STOPPED') {
+        inactiveOverlay.classList.remove('hidden');
+        titleBarDot.style.background = '#6B7280';
+        titleBarDot.style.boxShadow = '0 0 6px #6B7280';
+        titleBarText.textContent = 'Tracker Inactive';
+        return;
+      }
+
+      inactiveOverlay.classList.add('hidden');
+
+      // Ring color
+      const activeColor = stateColors[state] || '#10B981';
+      document.documentElement.style.setProperty('--ring-color', activeColor);
+      titleBarDot.style.background = activeColor;
+      titleBarDot.style.boxShadow = `0 0 6px ${activeColor}`;
+      titleBarText.textContent = 'Tracking Active';
+
+      // Tooltip
+      const tooltipText = data.trackerStatusText || tooltipTexts[state] || 'AI Activity Tracker Running';
+      petTooltipTitle.textContent = tooltipText;
+
+      const lastCapture = data.lastCaptureTime || '';
+      if (lastCapture) {
+        petTooltipSub.innerHTML = `<span class="atp-heartbeat-dot"></span>Captured: ${lastCapture}`;
+      } else {
+        petTooltipSub.innerHTML = `<span class="atp-heartbeat-dot"></span>Heartbeat Active`;
+      }
+
+      // Asset image
+      const filename = assetMap[state] || 'active';
+      petImg.src = `/assets/technosprint-pet/${filename}.png`;
+
+      // Animation class
+      petImg.className = `atp-pet-img ${animMap[state] || 'atp-happy'}`;
+
+      // Capture tick badge + pulse
+      if (state === 'CAPTURED') {
+        triggerHeartbeatPulse();
+        petTickBadge.style.display = 'flex';
+        setTimeout(() => {
+          if (petTickBadge) petTickBadge.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    // ─── Listen for state updates from main app ───
+    channel.onmessage = (event) => {
+      const msg = event.data;
+      if (msg.type === 'PET_STATE_UPDATE') {
+        applyState(msg.payload);
+      } else if (msg.type === 'PET_CLOSE') {
+        window.close();
+      }
+    };
+
+    // ─── On load, request current state ───
+    channel.postMessage({ type: 'PET_POPUP_READY' });
+
+    // ─── Send heartbeat so main app knows popup is alive ───
+    setInterval(() => {
+      channel.postMessage({ type: 'PET_POPUP_HEARTBEAT' });
+    }, 5000);
+
+    // ─── Close gracefully ───
+    window.addEventListener('beforeunload', () => {
+      channel.postMessage({ type: 'PET_POPUP_CLOSED' });
+    });
+  </script>
+</body>
+</html>

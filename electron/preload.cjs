@@ -18,4 +18,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   /** Set main window always on top */
   setAlwaysOnTop: (flag) => ipcRenderer.invoke('set-always-on-top', flag),
+
+  /** Expose 3D pet companion controls */
+  updatePetStatus: (stateOrStatus, mood, entries) => {
+    if (stateOrStatus && typeof stateOrStatus === 'object') {
+      ipcRenderer.send('pet-overlay-update', stateOrStatus);
+    } else {
+      ipcRenderer.send('pet-overlay-update', { status: stateOrStatus, mood, entries });
+    }
+  },
+  movePet: (x, y) => ipcRenderer.send('pet-overlay-move', { x, y }),
 });
+

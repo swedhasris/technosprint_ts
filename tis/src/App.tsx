@@ -10,6 +10,7 @@ import { AppNavbar } from "./components/AppNavbar";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AIChatbot } from "./components/AIChatbot";
 import { TechnosprintPet } from "./components/TechnosprintPet";
+import { AITrackerPet } from "./components/AITrackerPet";
 import { seedInitialData } from "./lib/seed";
 import { useEffect } from "react";
 import { ROLE_HIERARCHY, Role } from "./lib/roles";
@@ -395,9 +396,10 @@ function AppBody() {
           <Route path="*" element={<Navigate to="/" />} />
 
           </Routes>
-          <TechnosprintPet />
         </Suspense>
-          </Router>
+        <TechnosprintPet />
+        <AITrackerPet />
+      </Router>
         </ActivityTrackerProvider>
       </BrandingProvider>
     </ThemeProvider>

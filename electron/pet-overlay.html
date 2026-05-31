@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Connect IT - 3D AI Pet Companion</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       Connect IT 3D AI Pet — System-Wide Screen Overlay
+       100% transparent floating mascot companion overlay.
+       Zero surrounding card boxes or borders.
+       ═══════════════════════════════════════════════════════════════ */
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --pet-scale: 1.0;
+      --pet-width: calc(115px * var(--pet-scale));
+      --pet-height: calc(115px * var(--pet-scale));
+      --ring-color: #10B981;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: transparent !important;
+      overflow: hidden;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      pointer-events: none; /* Clicks default to pass-through */
+    }
+
+    /* ─── Premium Floating Mascot Container ─── */
+    #pet-container {
+      position: absolute;
+      width: var(--pet-width);
+      height: var(--pet-height);
+      background: transparent !important; /* 100% transparent background */
+      border: none !important; /* No surrounding box/border */
+      box-shadow: none !important; /* No surrounding box shadow */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto !important; /* Hover coordinates allow clicks */
+      cursor: grab;
+      transition: 
+        width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+        height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      z-index: 999999;
+      transform-origin: center center;
+    }
+
+    #pet-container:active {
+      cursor: grabbing;
+    }
+
+    /* ─── Ring Glow around Mascot ─── */
+    .atp-img-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      padding: calc(6px * var(--pet-scale));
+      border: 2px solid var(--ring-color);
+      box-shadow: 
+        0 0 calc(14px * var(--pet-scale)) var(--ring-color),
+        inset 0 0 calc(6px * var(--pet-scale)) var(--ring-color);
+      background: rgba(11, 20, 26, 0.45);
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    /* ─── Premium Glassmorphic Tooltip Speech Bubble ─── */
+    #pet-tooltip {
+      position: absolute;
+      bottom: 110%; /* Right above the ring */
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      width: calc(180px * var(--pet-scale));
+      background: rgba(11, 20, 26, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: calc(8px * var(--pet-scale)) calc(12px * var(--pet-scale));
+      box-shadow: 
+        0 12px 30px rgba(0, 0, 0, 0.65),
+        0 0 1px rgba(255, 255, 255, 0.2) inset;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 3px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      z-index: 10000;
+    }
+
+    #pet-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px;
+      border-style: solid;
+      border-color: rgba(11, 20, 26, 0.92) transparent transparent transparent;
+    }
+
+    #pet-container:hover #pet-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0px);
+    }
+
+    .atp-tooltip-title {
+      font-size: calc(10px * var(--pet-scale));
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.025em;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .atp-tooltip-sub {
+      font-size: calc(8px * var(--pet-scale));
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
+
+    /* ─── Heartbeat dot indicator inside tooltip ─── */
+    .atp-heartbeat-dot {
+      width: calc(6px * var(--pet-scale));
+      height: calc(6px * var(--pet-scale));
+      border-radius: 50%;
+      background: #10B981;
+      display: inline-block;
+      margin-right: 4px;
+      box-shadow: 0 0 6px #10B981;
+    }
+
+    /* ─── Sleek Hover Controls ─── */
+    #pet-header {
+      position: absolute;
+      top: calc(-24px * var(--pet-scale));
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      z-index: 10005;
+    }
+
+    #pet-container:hover #pet-header {
+      opacity: 1;
+    }
+
+    .atp-btn {
+      background: rgba(11, 20, 26, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+      width: calc(22px * var(--pet-scale));
+      height: calc(22px * var(--pet-scale));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: calc(10px * var(--pet-scale));
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+    }
+
+    .atp-btn:hover {
+      background: rgba(59, 130, 246, 0.85);
+      color: #fff;
+      transform: scale(1.1);
+    }
+
+    .atp-btn.locked {
+      background: rgba(239, 68, 68, 0.85);
+      color: #fff;
+    }
+
+    /* ─── Body Mascot Display ─── */
+    #pet-body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .atp-pet-img {
+      width: calc(68px * var(--pet-scale));
+      height: calc(68px * var(--pet-scale));
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.35));
+      transition: opacity 0.4s ease, filter 0.4s ease;
+      transform-origin: center center;
+      z-index: 2;
+    }
+
+    .atp-specular {
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      width: calc(20px * var(--pet-scale));
+      height: calc(12px * var(--pet-scale));
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 35% 25%, rgba(255,255,255,0.7), transparent 70%);
+      transform: rotate(-18deg);
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .atp-rim {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(14px * var(--pet-scale));
+      height: calc(6px * var(--pet-scale));
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(255, 255, 255, 0.4), transparent);
+      filter: blur(1.5px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .atp-shadow {
+      position: absolute;
+      bottom: calc(-12px * var(--pet-scale));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(44px * var(--pet-scale));
+      height: calc(8px * var(--pet-scale));
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(0, 0, 0, 0.4), transparent);
+      filter: blur(3.5px);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* ─── Captured tick overlay badge ─── */
+    .atp-tick-badge {
+      position: absolute;
+      top: calc(-4px * var(--pet-scale));
+      right: calc(-4px * var(--pet-scale));
+      width: calc(20px * var(--pet-scale));
+      height: calc(20px * var(--pet-scale));
+      background: #10B981;
+      color: white;
+      border-radius: 50%;
+      border: 1.5px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(10px * var(--pet-scale));
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      animation: atp-appear 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      z-index: 10;
+    }
+
+    /* ─── Minimized State overrides ─── */
+    #pet-container.minimized {
+      width: calc(46px * var(--pet-scale)) !important;
+      height: calc(46px * var(--pet-scale)) !important;
+    }
+
+    #pet-container.minimized #pet-header,
+    #pet-container.minimized #pet-tooltip,
+    #pet-container.minimized .atp-shadow {
+      display: none !important;
+    }
+
+    #pet-container.minimized .atp-img-wrapper {
+      width: calc(42px * var(--pet-scale)) !important;
+      height: calc(42px * var(--pet-scale)) !important;
+      padding: 2px !important;
+    }
+
+    #pet-container.minimized .atp-pet-img {
+      width: calc(30px * var(--pet-scale)) !important;
+      height: calc(30px * var(--pet-scale)) !important;
+    }
+
+    #pet-container.minimized .atp-tick-badge {
+      top: -6px;
+      right: -6px;
+      width: 14px;
+      height: 14px;
+      font-size: 8px;
+    }
+
+    /* ─── Heartbeat Ring Pulse Animation ─── */
+    @keyframes heartbeat-pulse {
+      0% { transform: scale(1) translate(-50%, -50%); opacity: 1; }
+      100% { transform: scale(2.2) translate(-50%, -50%); opacity: 0; }
+    }
+
+    .heartbeat-pulse {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(75px * var(--pet-scale));
+      height: calc(75px * var(--pet-scale));
+      border-radius: 50%;
+      border: 3px solid #10B981;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .heartbeat-active {
+      animation: heartbeat-pulse 1.2s cubic-bezier(0.215, 0.610, 0.355, 1) forwards;
+    }
+
+    /* ─── Mascot Keyframes ─── */
+    @keyframes atp-walk {
+      0%, 100% { transform: translateY(0px) rotate(0deg) scaleX(1); }
+      20%     { transform: translateY(-5px) rotate(-2deg) scaleX(1.02); }
+      50%     { transform: translateY(-1px) rotate(0deg) scaleX(1); }
+      75%     { transform: translateY(-6px) rotate(2deg) scaleX(1.02); }
+    }
+
+    @keyframes atp-sleep {
+      0%, 100% { transform: rotate(0deg) translateY(0px) brightness(0.65); filter: saturate(0.5); opacity: 0.8; }
+      50%     { transform: rotate(4deg) translateY(4px) brightness(0.65); filter: saturate(0.5); opacity: 0.8; }
+    }
+
+    @keyframes atp-celebrate {
+      0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+      15%     { transform: translateY(-12px) rotate(-10deg) scale(1.12); }
+      35%     { transform: translateY(-6px) rotate(8deg) scale(1.08); }
+      55%     { transform: translateY(-15px) rotate(-6deg) scale(1.14); }
+      75%     { transform: translateY(-4px) rotate(5deg) scale(1.06); }
+    }
+
+    @keyframes atp-think {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      30%     { transform: translateY(-4px) rotate(-4deg); }
+      70%     { transform: translateY(-3px) rotate(4deg); }
+    }
+
+    @keyframes atp-sit {
+      0%, 100% { transform: scaleY(1) translateY(0px); }
+      50%     { transform: scaleY(0.88) translateY(4px); }
+    }
+
+    @keyframes atp-warning {
+      0%, 100% { transform: translateX(0px) rotate(0deg); }
+      20%     { transform: translateX(-6px) rotate(-4deg); }
+      40%     { transform: translateX(6px) rotate(4deg); }
+      60%     { transform: translateX(-4px) rotate(-2deg); }
+      80%     { transform: translateX(4px) rotate(2deg); }
+    }
+
+    @keyframes atp-observe {
+      0%, 100% { transform: translateX(0px) rotate(0deg); }
+      30%     { transform: translateX(-4px) rotate(-1deg); }
+      70%     { transform: translateX(4px) rotate(1deg); }
+    }
+
+    @keyframes atp-happy {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50%     { transform: translateY(-6px) scale(1.05); }
+    }
+
+    @keyframes atp-appear {
+      from { opacity: 0; transform: scale(0.5); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .atp-walk { animation: atp-walk 0.65s ease-in-out infinite; }
+    .atp-sleep { animation: atp-sleep 3.2s ease-in-out infinite; }
+    .atp-celebrate { animation: atp-celebrate 0.85s ease-in-out infinite; }
+    .atp-think { animation: atp-think 2.3s ease-in-out infinite; }
+    .atp-sit { animation: atp-sit 1.6s ease-in-out infinite; }
+    .atp-warning { animation: atp-warning 0.6s ease-in-out infinite; }
+    .atp-observe { animation: atp-observe 3.1s ease-in-out infinite; }
+    .atp-happy { animation: atp-happy 1.8s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Screen-Sharing Controls Container -->
+  <div id="pet-container">
+    <!-- Heartbeat Ring Pulse -->
+    <div id="heartbeat-ring" class="heartbeat-pulse"></div>
+
+    <!-- Header Panel (Action icons - hover only) -->
+    <div id="pet-header">
+      <button id="btn-lock" class="atp-btn" title="Lock/Unlock Position">🔓</button>
+      <button id="btn-size-down" class="atp-btn" title="Resize Smaller">−</button>
+      <button id="btn-size-up" class="atp-btn" title="Resize Larger">+</button>
+      <button id="btn-minimize" class="atp-btn" title="Minimize Control">_</button>
+    </div>
+
+    <!-- 3D Mascot Image Display -->
+    <div id="pet-body">
+      <div id="pet-wrapper" class="atp-img-wrapper">
+        <img id="pet-img" src="./assets/technosprint-pet/active.png" class="atp-pet-img atp-happy" alt="3D AI Pet" draggable="false">
+        <div id="pet-specular" class="atp-specular"></div>
+        <div id="pet-rim" class="atp-rim"></div>
+        <!-- Captured Tick Badge -->
+        <div id="pet-tick-badge" class="atp-tick-badge" style="display:none;">✓</div>
+      </div>
+      <div class="atp-shadow"></div>
+    </div>
+
+    <!-- Hover Speech Tooltip -->
+    <div id="pet-tooltip">
+      <span id="pet-tooltip-title" class="atp-tooltip-title">AI Activity Tracker Running</span>
+      <span id="pet-tooltip-sub" class="atp-tooltip-sub">
+        <span class="atp-heartbeat-dot"></span>Heartbeat Active
+      </span>
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById('pet-container');
+    const petImg = document.getElementById('pet-img');
+    const petWrapper = document.getElementById('pet-wrapper');
+    const petTooltipTitle = document.getElementById('pet-tooltip-title');
+    const petTooltipSub = document.getElementById('pet-tooltip-sub');
+    const petTickBadge = document.getElementById('pet-tick-badge');
+    
+    // Header controls
+    const btnLock = document.getElementById('btn-lock');
+    const btnSizeDown = document.getElementById('btn-size-down');
+    const btnSizeUp = document.getElementById('btn-size-up');
+    const btnMinimize = document.getElementById('btn-minimize');
+
+    // State parameters
+    let petPosition = { x: window.innerWidth - 140, y: window.innerHeight - 155 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let isLocked = false;
+    let isMinimized = false;
+    let petScale = 1.0;
+
+    // Load saved settings
+    function loadSavedState() {
+      const savedX = localStorage.getItem('global_pet_x');
+      const savedY = localStorage.getItem('global_pet_y');
+      const savedScale = localStorage.getItem('global_pet_scale');
+      const savedLocked = localStorage.getItem('global_pet_locked') === 'true';
+      const savedMinimized = localStorage.getItem('global_pet_minimized') === 'true';
+
+      if (savedScale) {
+        petScale = Math.max(0.7, Math.min(1.6, parseFloat(savedScale)));
+        document.documentElement.style.setProperty('--pet-scale', petScale.toString());
+      }
+      
+      isLocked = savedLocked;
+      updateLockUI();
+      
+      isMinimized = savedMinimized;
+      if (isMinimized) {
+        container.classList.add('minimized');
+      }
+
+      if (savedX !== null && savedY !== null) {
+        petPosition.x = parseInt(savedX, 10);
+        petPosition.y = parseInt(savedY, 10);
+      }
+      
+      applyPositionAndSize();
+    }
+
+    function applyPositionAndSize() {
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const rect = container.getBoundingClientRect();
+      const currentWidth = rect.width || 115;
+      const currentHeight = rect.height || 115;
+      
+      petPosition.x = Math.max(4, Math.min(W - currentWidth - 4, petPosition.x));
+      petPosition.y = Math.max(4, Math.min(H - currentHeight - 4, petPosition.y));
+      
+      container.style.left = `${petPosition.x}px`;
+      container.style.top = `${petPosition.y}px`;
+    }
+
+    function updateLockUI() {
+      if (isLocked) {
+        btnLock.textContent = '🔒';
+        btnLock.classList.add('locked');
+      } else {
+        btnLock.textContent = '🔓';
+        btnLock.classList.remove('locked');
+      }
+    }
+
+    // ─── Control Interactions ───
+    btnLock.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isLocked = !isLocked;
+      updateLockUI();
+      localStorage.setItem('global_pet_locked', isLocked.toString());
+    });
+
+    btnSizeUp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      petScale = Math.min(1.6, petScale + 0.1);
+      document.documentElement.style.setProperty('--pet-scale', petScale.toString());
+      localStorage.setItem('global_pet_scale', petScale.toString());
+      applyPositionAndSize();
+    });
+
+    btnSizeDown.addEventListener('click', (e) => {
+      e.stopPropagation();
+      petScale = Math.max(0.7, petScale - 0.1);
+      document.documentElement.style.setProperty('--pet-scale', petScale.toString());
+      localStorage.setItem('global_pet_scale', petScale.toString());
+      applyPositionAndSize();
+    });
+
+    btnMinimize.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isMinimized = true;
+      container.classList.add('minimized');
+      localStorage.setItem('global_pet_minimized', 'true');
+      applyPositionAndSize();
+    });
+
+    // Double-click minimized container to restore
+    container.addEventListener('dblclick', (e) => {
+      if (isMinimized) {
+        isMinimized = false;
+        container.classList.remove('minimized');
+        localStorage.setItem('global_pet_minimized', 'false');
+        applyPositionAndSize();
+      }
+    });
+
+    // ─── HTML Dragging Logic ───
+    container.addEventListener('mousedown', (e) => {
+      if (isLocked) return;
+      if (e.target.closest('button') || e.target.closest('.atp-btn')) return;
+      
+      isDragging = true;
+      dragStart.x = e.clientX - petPosition.x;
+      dragStart.y = e.clientY - petPosition.y;
+      container.style.transition = 'none';
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      petPosition.x = e.clientX - dragStart.x;
+      petPosition.y = e.clientY - dragStart.y;
+      applyPositionAndSize();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        container.style.transition = 'width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+        localStorage.setItem('global_pet_x', petPosition.x.toString());
+        localStorage.setItem('global_pet_y', petPosition.y.toString());
+      }
+    });
+
+    // ─── Mouse Pointer Ignore Coordination ───
+    window.addEventListener('mousemove', (e) => {
+      const rect = container.getBoundingClientRect();
+      const pad = 12; // hover padding buffer
+      
+      const insideX = e.clientX >= rect.left - pad && e.clientX <= rect.right + pad;
+      const insideY = e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
+      
+      if (insideX && insideY) {
+        if (window.petBridge?.setIgnoreMouseEvents) {
+          window.petBridge.setIgnoreMouseEvents(false);
+        }
+      } else {
+        if (window.petBridge?.setIgnoreMouseEvents) {
+          window.petBridge.setIgnoreMouseEvents(true, { forward: true });
+        }
+      }
+    });
+
+    // ─── Heartbeat Ring Pulse Trigger ───
+    function triggerHeartbeatPulse() {
+      const ring = document.getElementById('heartbeat-ring');
+      ring.classList.remove('heartbeat-active');
+      void ring.offsetWidth; // trigger reflow
+      ring.classList.add('heartbeat-active');
+    }
+
+    // ─── IPC Status Subscriber ───
+    if (window.petBridge) {
+      window.petBridge.onStateChange((data) => {
+        if (!data) return;
+
+        const isCurrentlyActive = Boolean(data.visible || data.status === 'active');
+        if (!isCurrentlyActive) {
+          container.style.display = 'none';
+          if (window.petBridge?.setIgnoreMouseEvents) {
+            window.petBridge.setIgnoreMouseEvents(true, { forward: true });
+          }
+          return;
+        }
+
+        container.style.display = 'flex';
+
+        const state = data.trackerState || 'ACTIVE';
+        const statusText = data.trackerStatusText || 'AI Activity Tracker Running';
+        const lastCapture = data.lastCaptureTime || '';
+
+        // State colors & spec glow mapping
+        const stateColors = {
+          ACTIVE: '#10B981',       // Green Glow
+          CAPTURED: '#10B981',     // Green Glow
+          UPLOADING: '#3B82F6',    // Blue Ring
+          PROCESSING: '#F59E0B',   // Orange Ring
+          PAUSED: '#EAB308',       // Yellow Ring
+          ERROR: '#EF4444',        // Red Ring
+          DISCONNECTED: '#EF4444', // Red Ring
+          STOPPED: '#6B7280'       // Gray Ring
+        };
+        const activeColor = stateColors[state] || '#10B981';
+        document.documentElement.style.setProperty('--ring-color', activeColor);
+
+        // Tooltip updates per spec
+        const tooltipTexts = {
+          ACTIVE: 'AI Activity Tracker Running',
+          CAPTURED: 'Screenshot Captured Successfully',
+          UPLOADING: 'Uploading Activity',
+          PROCESSING: 'Processing Activity',
+          PAUSED: 'Tracker Paused',
+          ERROR: 'Tracker Error',
+          DISCONNECTED: 'Connection Lost',
+          STOPPED: 'Tracker Stopped'
+        };
+        const activeTooltip = tooltipTexts[state] || 'AI Activity Tracker Running';
+        petTooltipTitle.textContent = activeTooltip;
+
+        if (lastCapture) {
+          petTooltipSub.innerHTML = `<span class="atp-heartbeat-dot"></span>Captured: ${lastCapture}`;
+        } else {
+          petTooltipSub.innerHTML = `<span class="atp-heartbeat-dot"></span>Heartbeat Active`;
+        }
+
+        // Map state to asset filenames
+        const assetMap = {
+          ACTIVE: 'active',
+          CAPTURED: 'success',
+          UPLOADING: 'working',
+          PROCESSING: 'thinking',
+          PAUSED: 'waiting',
+          ERROR: 'alert',
+          DISCONNECTED: 'concerned',
+          STOPPED: 'waiting'
+        };
+        const filename = assetMap[state] || 'active';
+        petImg.src = `./assets/technosprint-pet/${filename}.png`;
+
+        // Map state to animation classes
+        const animMap = {
+          ACTIVE: 'atp-happy',
+          CAPTURED: 'atp-celebrate',
+          UPLOADING: 'atp-walk',
+          PROCESSING: 'atp-think',
+          PAUSED: 'atp-sit',
+          ERROR: 'atp-warning',
+          DISCONNECTED: 'atp-observe',
+          STOPPED: 'atp-sleep'
+        };
+        petImg.className = `atp-pet-img ${animMap[state] || 'atp-happy'}`;
+
+        // Trigger pulse & small green tick overlay on screenshot capture
+        if (state === 'CAPTURED') {
+          triggerHeartbeatPulse();
+          petTickBadge.style.display = 'flex';
+          // Hide checkmark badge after 3 seconds
+          setTimeout(() => {
+            if (petTickBadge) petTickBadge.style.display = 'none';
+          }, 3000);
+        } else if (state !== 'CAPTURED' && petTickBadge.style.display !== 'none') {
+          // Keep tick active during success transitions
+        }
+
+        applyPositionAndSize();
+      });
+    }
+
+    // Initialize state
+    window.addEventListener('resize', applyPositionAndSize, { passive: true });
+    loadSavedState();
+  </script>
+</body>
+</html>

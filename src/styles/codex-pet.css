@@ -4,6 +4,169 @@
   }
 
   50% {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
   }
+}
+
+@keyframes codex-pet-shadow {
+  0%, 100% {
+    transform: scaleX(1);
+    opacity: 0.22;
+  }
+
+  50% {
+    transform: scaleX(0.9);
+    opacity: 0.14;
+  }
+}
+
+@keyframes codex-pet-antenna {
+  0%, 100% {
+    transform: translate(111px, 17px) rotate(38deg);
+  }
+
+  50% {
+    transform: translate(111px, 15px) rotate(35deg);
+  }
+}
+
+@keyframes codex-pet-glow {
+  0%, 100% {
+    opacity: 0.85;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes codex-pet-blink {
+  0%, 86%, 100% {
+    transform: scaleY(1);
+  }
+
+  90%, 94% {
+    transform: scaleY(0.14);
+  }
+}
+
+@keyframes codex-pet-mouth {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(0.6px);
+  }
+}
+
+@keyframes codex-pet-wave {
+  0%, 100% {
+    transform: translate(140px, 97px) rotate(-12deg);
+  }
+
+  50% {
+    transform: translate(140px, 96px) rotate(-5deg);
+  }
+}
+
+.codex-pet-float {
+  animation: codex-pet-float 3.8s ease-in-out infinite;
+}
+
+.codex-pet-shadow {
+  animation: codex-pet-shadow 3.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.codex-pet-body {
+  animation: codex-pet-float 3.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.codex-pet-antenna {
+  animation: codex-pet-antenna 3.8s ease-in-out infinite;
+  transform-origin: 111px 35px;
+}
+
+.codex-pet-glow {
+  animation: codex-pet-glow 3.8s ease-in-out infinite;
+}
+
+.codex-pet-face {
+  transform-origin: 90px 94px;
+}
+
+.codex-pet-eye {
+  animation: codex-pet-blink 5.6s ease-in-out infinite;
+}
+
+.codex-pet-eye-left {
+  transform-origin: 72px 89px;
+}
+
+.codex-pet-eye-right {
+  transform-origin: 108px 89px;
+}
+
+.codex-pet-mouth {
+  animation: codex-pet-mouth 3.8s ease-in-out infinite;
+  transform-origin: 90px 104px;
+}
+
+.codex-pet-wave {
+  animation: codex-pet-wave 1.9s ease-in-out infinite;
+  transform-origin: 140px 97px;
+}
+
+/* ── 3D Pet State Animations ── */
+
+@keyframes codex-pet-celebrate {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  20% {
+    transform: translateY(-10px) rotate(-5deg) scale(1.07);
+  }
+  40% {
+    transform: translateY(-6px) rotate(4deg) scale(1.04);
+  }
+  60% {
+    transform: translateY(-12px) rotate(-3deg) scale(1.08);
+  }
+  80% {
+    transform: translateY(-4px) rotate(2deg) scale(1.03);
+  }
+}
+
+@keyframes codex-pet-sleep {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(3px) rotate(2deg);
+  }
+}
+
+@keyframes codex-pet-think {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-4px) scale(1.02);
+    opacity: 0.92;
+  }
+}
+
+.codex-pet-celebrate {
+  animation: codex-pet-celebrate 1.4s ease-in-out infinite;
+}
+
+.codex-pet-sleep {
+  animation: codex-pet-sleep 4s ease-in-out infinite;
+}
+
+.codex-pet-think {
+  animation: codex-pet-think 2s ease-in-out infinite;
 }

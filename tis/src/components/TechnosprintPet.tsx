@@ -32,8 +32,6 @@ type PetState =
   | "SUCCESS"
   | "ERROR";
 
-
-
 interface TicketData {
   id: string;
   ticket_number?: string;
@@ -146,11 +144,20 @@ export function TechnosprintPet() {
 
             if (change.type === "added") {
               if (ticket.createdBy === user.uid) {
+                // Play visual sequence for creation and submission
                 triggerBubble(`Ticket ${ticketNum} created successfully! I've noted it with care. 📝`);
-                setPetState("ACTIVE");
+                setPetState("WRITING");
+                setTimeout(() => {
+                  setPetState("SUCCESS");
+                }, 2000);
               }
             } else if (change.type === "modified" && cachedStatus !== ticket.status) {
-              if (ticket.status === "Resolved") {
+              const priority = ticket.priority;
+              
+              if (priority?.includes("Critical")) {
+                triggerBubble(`Warning: Critical incident ${ticketNum} has been updated! ⚠️`);
+                setPetState("ALERT");
+              } else if (ticket.status === "Resolved") {
                 triggerBubble(`Good news! Ticket ${ticketNum} has been resolved! 🌟`);
                 setPetState("RESOLVED");
               } else if (ticket.status === "Closed") {
@@ -158,16 +165,16 @@ export function TechnosprintPet() {
                 setPetState("CLOSED");
               } else if (ticket.status === "In Progress") {
                 triggerBubble(`Work is currently underway on ticket ${ticketNum}! 🚀`);
-                setPetState("IN_PROGRESS");
+                setPetState("WORKING");
               } else if (ticket.status === "On Hold") {
                 triggerBubble(`Ticket ${ticketNum} is temporarily on hold. ⏱`);
                 setPetState("ON_HOLD");
               } else if (ticket.assignedTo === user.uid && cachedStatus !== "Assigned") {
                 triggerBubble(`A technician has been assigned to ticket ${ticketNum}! 🔧`);
-                setPetState("ASSIGNED");
+                setPetState("WORKING");
               } else {
                 triggerBubble(`Your ticket ${ticketNum} has been updated.`);
-                setPetState("ACTIVE");
+                setPetState("THINKING");
               }
             }
           }
@@ -199,11 +206,16 @@ export function TechnosprintPet() {
       const activeTicket = userTickets.find(t => t.id === ticketId);
       if (activeTicket) {
         const status = activeTicket.status;
-        if (status === "Resolved") setPetState("RESOLVED");
+        const priority = activeTicket.priority;
+
+        if (priority?.includes("Critical")) {
+          setPetState("ALERT");
+          setBubbleText("This is a CRITICAL incident! High priority handling required!");
+        } else if (status === "Resolved") setPetState("RESOLVED");
         else if (status === "Closed") setPetState("CLOSED");
         else if (status === "On Hold" || status === "Pending") setPetState("ON_HOLD");
-        else if (status === "In Progress") setPetState("IN_PROGRESS");
-        else if (status === "Assigned") setPetState("ASSIGNED");
+        else if (status === "In Progress") setPetState("WORKING");
+        else if (status === "Assigned") setPetState("WORKING");
         else setPetState("ACTIVE");
       }
     } else {
@@ -219,7 +231,7 @@ export function TechnosprintPet() {
         setPetState("ACTIVE");
       } else if (path === "/kb") {
         setBubbleText("Search articles to resolve issues faster!");
-        setPetState("PENDING");
+        setPetState("SEARCHING");
       } else if (path === "/reports") {
         setBubbleText("View performance insights and SLA stats.");
         setPetState("ACTIVE");
@@ -244,7 +256,7 @@ export function TechnosprintPet() {
       if (isUserInactive) {
         // Wake up!
         isUserInactive = false;
-        setPetState("WAVING");
+        setPetState("ACTIVE");
         triggerBubble("Welcome back.");
       }
       
@@ -253,7 +265,7 @@ export function TechnosprintPet() {
       idleTimer = setTimeout(() => {
         // Go to sleep!
         isUserInactive = true;
-        setPetState("SLEEPING");
+        setPetState("WAITING");
         triggerBubble("I'm here whenever you need me.");
       }, idleTimeoutMs);
     };
@@ -330,7 +342,7 @@ export function TechnosprintPet() {
           triggerBubble(`AI Task Completed: ${taskName} ✓`);
           setTimeout(() => {
             setAiTask("");
-            setPetState("WAVING");
+            setPetState("ACTIVE");
           }, 3000);
         }
         return response;
@@ -340,7 +352,7 @@ export function TechnosprintPet() {
           triggerBubble(`AI Task Failed: ${taskName} ⚠`);
           setTimeout(() => {
             setAiTask("");
-            setPetState("WAVING");
+            setPetState("ACTIVE");
           }, 3000);
         }
         throw error;
@@ -439,12 +451,8 @@ export function TechnosprintPet() {
     localStorage.setItem("technosprint_pet_minimized", String(newMin));
   };
 
-  // Render official SVG Mascot based on current expression
+  // Render official PNG Mascot based on current expression
   const renderMascotSVG = () => {
-    // Symmetrical infinity loop branding logo path
-    const logoPath = "M 0,0 C -4.5,-4.5 -9,-4.5 -9,0 C -9,4.5 -4.5,4.5 0,0 C 4.5,-4.5 9,-4.5 9,0 C 9,4.5 4.5,4.5 0,0 Z";
-
-    // Map petState to one of the official derived visual states + WAITING/ERROR spec states
     const getVisualState = (state: PetState): "HAPPY" | "THINKING" | "WRITING" | "SLEEPING" | "CELEBRATING" | "WORKING" | "WAVING" | "NOTIFYING" | "ERROR" | "WAITING" => {
       switch (state) {
         case "HAPPY":
@@ -482,416 +490,180 @@ export function TechnosprintPet() {
     };
 
     const visualState = getVisualState(petState);
-
-    const isHappy = visualState === "HAPPY";
-    const isThinking = visualState === "THINKING";
-    const isWriting = visualState === "WRITING";
     const isSleeping = visualState === "SLEEPING";
+    const isThinking = visualState === "THINKING";
     const isCelebrating = visualState === "CELEBRATING";
     const isWorking = visualState === "WORKING";
-    const isWaving = visualState === "WAVING";
-    const isNotifying = visualState === "NOTIFYING";
     const isError = visualState === "ERROR";
-    const isWaiting = visualState === "WAITING";
+
+    const getPetImage = (state: string): string => {
+      const normalized = String(state || "").toUpperCase();
+      switch (normalized) {
+        case "ACTIVE":
+        case "WAVING":
+        case "HAPPY":
+          return "/assets/technosprint-pet/active.png";
+        case "PENDING":
+          return "/assets/technosprint-pet/pending.png";
+        case "WORKING":
+        case "IN_PROGRESS":
+        case "ASSIGNED":
+          return "/assets/technosprint-pet/working.png";
+        case "WRITING":
+          return "/assets/technosprint-pet/writing.png";
+        case "THINKING":
+          return "/assets/technosprint-pet/thinking.png";
+        case "ASSISTING":
+        case "NOTIFYING":
+          return "/assets/technosprint-pet/assisting.png";
+        case "SUCCESS":
+          return "/assets/technosprint-pet/success.png";
+        case "CELEBRATING":
+        case "CELEBRATION":
+          return "/assets/technosprint-pet/celebration.png";
+        case "SEARCHING":
+          return "/assets/technosprint-pet/searching.png";
+        case "WAITING":
+        case "IDLE":
+        case "SLEEPING":
+          return "/assets/technosprint-pet/waiting.png";
+        case "CONCERNED":
+          return "/assets/technosprint-pet/concerned.png";
+        case "ALERT":
+        case "ERROR":
+          return "/assets/technosprint-pet/alert.png";
+        case "ON_HOLD":
+        case "ON HOLD":
+          return "/assets/technosprint-pet/onhold.png";
+        case "RESOLVED":
+          return "/assets/technosprint-pet/resolved.png";
+        case "CLOSED":
+          return "/assets/technosprint-pet/closed.png";
+        default:
+          return "/assets/technosprint-pet/active.png";
+      }
+    };
+    const petImageSrc = getPetImage(petState);
+
+    // 3D perspective tilt per state
+    const stateTilt: React.CSSProperties = (() => {
+      switch (visualState) {
+        case "SLEEPING": return { transform: "perspective(200px) rotateX(8deg) rotateY(4deg) rotateZ(6deg)" };
+        case "THINKING": return { transform: "perspective(200px) rotateX(-4deg) rotateY(-6deg)" };
+        case "CELEBRATING": return { transform: "perspective(200px) rotateX(-6deg) rotateY(3deg)" };
+        case "WORKING": return { transform: "perspective(200px) rotateX(-3deg) rotateY(-3deg)" };
+        case "ERROR": return { transform: "perspective(200px) rotateX(5deg) rotateY(5deg)" };
+        default: return { transform: "perspective(200px) rotateX(-2deg) rotateY(0deg)" };
+      }
+    })();
+
+    // State-based styles for the 3D pet image
+    const stateStyle: React.CSSProperties = (() => {
+      switch (visualState) {
+        case "SLEEPING":
+          return { filter: "brightness(0.6) saturate(0.5)", opacity: 0.85 };
+        case "THINKING":
+          return { filter: "hue-rotate(30deg) brightness(1.05)", opacity: 1 };
+        case "CELEBRATING":
+          return { filter: "brightness(1.3) saturate(1.6) drop-shadow(0 0 12px #22C55E)", opacity: 1 };
+        case "WORKING":
+          return { filter: "hue-rotate(-20deg) brightness(1.1) saturate(1.3)", opacity: 1 };
+        case "ERROR":
+          return { filter: "hue-rotate(140deg) brightness(1.1) saturate(1.4)", opacity: 1 };
+        case "WRITING":
+          return { filter: "brightness(1.05) saturate(1.2)", opacity: 1 };
+        default:
+          return { filter: "brightness(1.1) drop-shadow(0 0 10px rgba(0,102,255,0.5))", opacity: 1 };
+      }
+    })();
+
+    const stateClass = (() => {
+      if (isCelebrating) return "codex-pet-celebrate";
+      if (isSleeping) return "codex-pet-sleep";
+      if (isThinking || isWorking) return "codex-pet-think";
+      return "codex-pet-float";
+    })();
 
     return (
-      <svg
-        viewBox="0 0 100 100"
-        className={`w-16 h-16 transition-all duration-300 drop-shadow-[0_4px_12px_rgba(0,102,255,0.35)]
-          ${isDragging ? "scale-105 cursor-grabbing" : "cursor-grab"}`}
+      <div
+        className="relative"
+        style={{
+          filter: "drop-shadow(0 8px 16px rgba(0,80,255,0.35)) drop-shadow(0 2px 4px rgba(0,0,0,0.4))",
+          ...stateTilt,
+          transition: "transform 0.6s cubic-bezier(0.34,1.56,0.64,1), filter 0.4s ease"
+        }}
       >
-        <defs>
-          <linearGradient id="headGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="40%" stopColor="#FAFCFF" />
-            <stop offset="100%" stopColor="#D9E3F0" />
-          </linearGradient>
+        {/* 3D ambient halo */}
+        <div
+          className="absolute inset-0 rounded-full blur-xl opacity-40 pointer-events-none transition-all duration-500"
+          style={{
+            background: isCelebrating
+              ? "radial-gradient(circle, #22C55E 0%, transparent 70%)"
+              : isError
+              ? "radial-gradient(circle, #EF4444 0%, transparent 70%)"
+              : isThinking
+              ? "radial-gradient(circle, #F59E0B 0%, transparent 70%)"
+              : "radial-gradient(circle, #3B82F6 0%, transparent 70%)",
+            transform: "translateY(6px) scaleX(0.85)"
+          }}
+        />
 
-          <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#38BDF8" />
-            <stop offset="40%" stopColor="#0066FF" />
-            <stop offset="100%" stopColor="#0044CC" />
-          </linearGradient>
+        {/* Main 3D pet image */}
+        <img
+          src={petImageSrc}
+          alt="Technosprint Pet"
+          draggable={false}
+          style={{
+            ...stateStyle,
+            filter: [
+              stateStyle.filter,
+              "drop-shadow(0 4px 8px rgba(0,60,200,0.4))",
+              "drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+            ].filter(Boolean).join(" ")
+          }}
+          className={`w-20 h-20 transition-all duration-500 select-none object-contain relative z-10 ${
+            isDragging ? "scale-105 cursor-grabbing" : `cursor-grab ${stateClass}`
+          }`}
+        />
 
-          <linearGradient id="darkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#0F172A" />
-            <stop offset="100%" stopColor="#020617" />
-          </linearGradient>
+        {/* Glossy specular highlight overlay */}
+        <div
+          className="absolute top-1 left-2 w-8 h-5 rounded-full pointer-events-none z-20 opacity-20"
+          style={{
+            background: "radial-gradient(ellipse at 40% 30%, rgba(255,255,255,0.9), transparent 70%)",
+            transform: "rotate(-15deg)"
+          }}
+        />
 
-          <radialGradient id="screenGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#00D2FF" stopOpacity="0.7" />
-            <stop offset="100%" stopColor="#00D2FF" stopOpacity="0" />
-          </radialGradient>
+        {/* Ground glow */}
+        <div
+          className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-14 h-3 rounded-full blur-md opacity-50 transition-all duration-500 z-0"
+          style={{
+            background: isCelebrating
+              ? "radial-gradient(ellipse, #22C55E, transparent)"
+              : isError
+              ? "radial-gradient(ellipse, #EF4444, transparent)"
+              : isThinking
+              ? "radial-gradient(ellipse, #F59E0B, transparent)"
+              : "radial-gradient(ellipse, #3B82F6, transparent)"
+          }}
+        />
 
-          <linearGradient id="checkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#34D399" />
-            <stop offset="100%" stopColor="#059669" />
-          </linearGradient>
-
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="1.2" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        <style>{`
-          @keyframes bob {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-4px); }
-          }
-          @keyframes shadow-scale {
-            0%, 100% { transform: scale(1); opacity: 0.15; }
-            50% { transform: scale(0.85); opacity: 0.08; }
-          }
-          @keyframes blink {
-            0%, 90%, 100% { transform: scaleY(1); }
-            95% { transform: scaleY(0.1); }
-          }
-          @keyframes zzz-rise {
-            0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
-            30% { opacity: 1; }
-            70% { opacity: 0.8; }
-            100% { opacity: 0; transform: translate(8px, -14px) scale(0.9); }
-          }
-          .bob-group { animation: bob 3.8s ease-in-out infinite; }
-          .shadow-group { animation: shadow-scale 3.8s ease-in-out infinite; transform-origin: 50px 96px; }
-          .blink-eye { animation: blink 4.5s linear infinite; transform-origin: 50% 47px; }
-          .z1 { animation: zzz-rise 3s ease-in-out infinite; transform-origin: 75px 22px; }
-          .z2 { animation: zzz-rise 3s ease-in-out infinite 1s; transform-origin: 79px 17px; }
-          .z3 { animation: zzz-rise 3s ease-in-out infinite 2s; transform-origin: 83px 12px; }
-          .neon-glow { filter: drop-shadow(0 0 1.5px #00E5FF) drop-shadow(0 0 3px rgba(0, 102, 255, 0.85)); }
-        `}</style>
-
-        <ellipse cx="50" cy="96" rx="18" ry="2.5" fill="rgba(0,102,255,0.15)" className="shadow-group" />
-
-        <g className="bob-group">
-          <g transform="translate(50, 18) rotate(30)">
-            <rect x="-4" y="-14" width="8" height="15" rx="4" fill="url(#blueGrad)" stroke="#004CD0" strokeWidth="0.8" />
-            <rect x="-2.5" y="-12" width="2" height="11" rx="1" fill="#FFFFFF" opacity="0.35" />
-          </g>
-
-          {isError && (
-            <>
-              {/* Red dome top light on the antenna */}
-              <circle cx="50" cy="5" r="4.5" fill="#FF3333" className="neon-glow" filter="url(#glow)" />
-              <circle cx="50" cy="5" r="3.2" fill="#FF8888" stroke="#FF0000" strokeWidth="0.8" />
-            </>
-          )}
-
-          <circle cx="50" cy="46" r="28" fill="url(#headGrad)" stroke="#CAD5E2" strokeWidth="1" />
-          <ellipse cx="38" cy="24" rx="9" ry="4.5" fill="#FFFFFF" opacity="0.25" transform="rotate(-28, 38, 24)" />
-
-          <ellipse cx="20" cy="46" rx="5.5" ry="10.5" fill="url(#blueGrad)" stroke="#004CD0" strokeWidth="0.8" />
-          <ellipse cx="21" cy="46" rx="2.4" ry="6.5" fill="#0035B0" />
-          <g transform="translate(20.8, 46.2) scale(0.36) rotate(-10)">
-            <path d={logoPath} stroke="#FFFFFF" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-            <rect x="-6.2" y="-7.7" width="3.2" height="3.2" fill="#FFFFFF" transform="rotate(45, -4.6, -6.1)" />
-          </g>
-
-          <ellipse cx="80" cy="46" rx="5.5" ry="10.5" fill="url(#blueGrad)" stroke="#004CD0" strokeWidth="0.8" />
-          <ellipse cx="79" cy="46" rx="2.4" ry="6.5" fill="#0035B0" />
-          <g transform="translate(79.2, 46.2) scale(0.36) rotate(10)">
-            <path d={logoPath} stroke="#FFFFFF" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-            <rect x="-6.2" y="-7.7" width="3.2" height="3.2" fill="#FFFFFF" transform="rotate(45, -4.6, -6.1)" />
-          </g>
-
-          <rect x="24" y="26" width="52" height="39" rx="19.5" fill="#141E30" stroke="#0E1724" strokeWidth="1" />
-          <rect x="25.5" y="27.5" width="49" height="36" rx="18" fill="url(#darkGrad)" />
-          <ellipse cx="50" cy="45" rx="20" ry="14" fill="url(#screenGlow)" opacity="0.35" pointer-events="none" />
-          <path d="M 26,34 Q 50,29 74,34 Q 74,31 50,26 Q 26,31 26,34 Z" fill="#FFFFFF" opacity="0.06" />
-
-          <g transform="translate(50, 36) scale(0.68)" className="neon-glow" filter="url(#glow)">
-            <path d={logoPath} stroke="#00E5FF" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-            <rect x="-6.2" y="-7.7" width="3" height="3" fill="#00E5FF" transform="rotate(45, -4.7, -6.2)" />
-          </g>
-          <g transform="translate(50, 36) scale(0.68)">
-            <path d={logoPath} stroke="#FFFFFF" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-            <rect x="-6.2" y="-7.7" width="3" height="3" fill="#FFFFFF" transform="rotate(45, -4.7, -6.2)" />
-          </g>
-
-          {isSleeping ? (
-            <>
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 33,48 Q 38,51 43,48" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-                <path d="M 57,48 Q 62,51 67,48" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-              </g>
-              <g>
-                <path d="M 33,48 Q 38,51 43,48" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M 57,48 Q 62,51 67,48" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-              </g>
-              <path d="M 47,53 Q 50,55 53,53" fill="none" stroke="#00E5FF" strokeWidth="2.2" strokeLinecap="round" className="neon-glow" filter="url(#glow)" />
-              <path d="M 47,53 Q 50,55 53,53" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-            </>
-          ) : isCelebrating ? (
-            <>
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 33,44 L 41,47 L 33,50" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M 67,44 L 59,47 L 67,50" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-              </g>
-              <g>
-                <path d="M 33,44 L 41,47 L 33,50" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M 67,44 L 59,47 L 67,50" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              </g>
-              <path d="M 46,52 Q 50,59 54,52 Z" fill="#00E5FF" className="neon-glow" filter="url(#glow)" />
-              <path d="M 46,52 Q 50,59 54,52 Z" fill="#FFFFFF" />
-            </>
-          ) : isThinking ? (
-            <>
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 33,46 Q 38,41 43,46" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-                <path d="M 57,48 Q 62,48 67,48" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-              </g>
-              <g>
-                <path d="M 33,46 Q 38,41 43,46" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M 57,48 Q 62,48 67,48" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-              </g>
-              <path d="M 45,54 Q 48,51 51,54 Q 53,56 55,53" fill="none" stroke="#00E5FF" strokeWidth="2.2" strokeLinecap="round" className="neon-glow" filter="url(#glow)" />
-              <path d="M 45,54 Q 48,51 51,54 Q 53,56 55,53" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-            </>
-          ) : isWriting ? (
-            <>
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 34,49 Q 39,46 44,51" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-                <path d="M 56,51 Q 61,46 66,49" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-              </g>
-              <g>
-                <path d="M 34,49 Q 39,46 44,51" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M 56,51 Q 61,46 66,49" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-              </g>
-              <path d="M 47,55 Q 50,57 53,55" fill="none" stroke="#00E5FF" strokeWidth="2.2" strokeLinecap="round" className="neon-glow" filter="url(#glow)" />
-              <path d="M 47,55 Q 50,57 53,55" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-            </>
-          ) : isHappy ? (
-            <>
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 32,46 Q 38,39 44,46" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" className="blink-eye" />
-                <path d="M 56,46 Q 62,39 68,46" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" className="blink-eye" />
-              </g>
-              <g>
-                <path d="M 32,46 Q 38,39 44,46" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" className="blink-eye" />
-                <path d="M 56,46 Q 62,39 68,46" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" className="blink-eye" />
-              </g>
-              <path d="M 45,52 Q 50,58 55,52 Z" fill="#00E5FF" className="neon-glow" filter="url(#glow)" />
-              <path d="M 45,52 Q 50,58 55,52 Z" fill="#FFFFFF" />
-            </>
-          ) : isWorking ? (
-            <>
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 32,45 Q 38,40 44,47" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-                <path d="M 56,47 Q 62,40 68,45" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" />
-              </g>
-              <g>
-                <path d="M 32,45 Q 38,40 44,47" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M 56,47 Q 62,40 68,45" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-              </g>
-              <path d="M 45,54 Q 50,57 55,54" fill="none" stroke="#00E5FF" strokeWidth="2.5" strokeLinecap="round" className="neon-glow" filter="url(#glow)" />
-              <path d="M 45,54 Q 50,57 55,54" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-            </>
-          ) : isNotifying ? (
-            <>
-              <g>
-                <path d="M 38,43 L 40,46 L 43,47 L 40,48 L 38,51 L 36,48 L 33,47 L 36,46 Z" fill="#00E5FF" className="neon-glow" filter="url(#glow)" />
-                <path d="M 38,43 L 40,46 L 43,47 L 40,48 L 38,51 L 36,48 L 33,47 L 36,46 Z" fill="#FFFFFF" />
-                <path d="M 62,43 L 64,46 L 67,47 L 64,48 L 62,51 L 60,48 L 57,47 L 60,46 Z" fill="#00E5FF" className="neon-glow" filter="url(#glow)" />
-                <path d="M 62,43 L 64,46 L 67,47 L 64,48 L 62,51 L 60,48 L 57,47 L 60,46 Z" fill="#FFFFFF" />
-              </g>
-              <path d="M 46,53 Q 50,58 54,53 Z" fill="#00E5FF" className="neon-glow" filter="url(#glow)" />
-              <path d="M 46,53 Q 50,58 54,53 Z" fill="#FFFFFF" />
-            </>
-          ) : isError ? (
-            <>
-              {/* ERROR (Yellow/orange warning eyes \ / and sad flat mouth) */}
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 33,44 L 43,49" fill="none" stroke="#FFAA00" strokeWidth="3.2" strokeLinecap="round" />
-                <path d="M 67,44 L 57,49" fill="none" stroke="#FFAA00" strokeWidth="3.2" strokeLinecap="round" />
-              </g>
-              <g>
-                <path d="M 33,44 L 43,49" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M 67,44 L 57,49" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-              </g>
-              {/* Sad flat mouth */}
-              <path d="M 45,55 L 55,55" fill="none" stroke="#FFAA00" strokeWidth="2.5" strokeLinecap="round" className="neon-glow" filter="url(#glow)" />
-              <path d="M 45,55 L 55,55" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-            </>
-          ) : isWaiting ? (
-            <>
-              {/* WAITING (Standard blinking curved eyes looking left/right and neutral cute smile curve) */}
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 31,48 Q 36,41 41,48" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" className="blink-eye" />
-                <path d="M 59,48 Q 64,41 69,48" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" className="blink-eye" />
-              </g>
-              <g>
-                <path d="M 31,48 Q 36,41 41,48" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" className="blink-eye" />
-                <path d="M 59,48 Q 64,41 69,48" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" className="blink-eye" />
-              </g>
-              {/* Neutral cute smile curve */}
-              <path d="M 46,54 Q 50,56 54,54" fill="none" stroke="#00E5FF" strokeWidth="2.5" strokeLinecap="round" className="neon-glow" filter="url(#glow)" />
-              <path d="M 46,54 Q 50,56 54,54" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-            </>
-          ) : (
-            <>
-              <g className="neon-glow" filter="url(#glow)">
-                <path d="M 33,48 Q 38,41 43,48" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" className="blink-eye" />
-                <path d="M 57,48 Q 62,41 67,48" fill="none" stroke="#00E5FF" strokeWidth="3.2" strokeLinecap="round" className="blink-eye" />
-              </g>
-              <g>
-                <path d="M 33,48 Q 38,41 43,48" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" className="blink-eye" />
-                <path d="M 57,48 Q 62,41 67,48" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" className="blink-eye" />
-              </g>
-              <path d="M 46,54 Q 50,58 54,54" fill="none" stroke="#00E5FF" strokeWidth="2.5" strokeLinecap="round" className="neon-glow" filter="url(#glow)" />
-              <path d="M 46,54 Q 50,58 54,54" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" />
-            </>
-          )}
-
-          <ellipse cx="50" cy="74.5" rx="10.5" ry="2.2" fill="#141E30" opacity="0.3" />
-
-          <ellipse cx="50" cy="83" rx="16.5" ry="11" fill="url(#headGrad)" stroke="#CAD5E2" strokeWidth="1" />
-          <g transform="translate(50, 83) scale(0.55)">
-            <path d={logoPath} stroke="#0055FF" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-            <rect x="-6.2" y="-7.7" width="3" height="3" fill="#0055FF" transform="rotate(45, -4.7, -6.2)" />
-          </g>
-
-          {isWriting ? (
-            <>
-              <path d="M 28,82 C 34,81 34,76 38,77" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <circle cx="38" cy="77" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              <rect x="37" y="67" width="22" height="23" rx="2.5" fill="#1E293B" stroke="#00E5FF" strokeWidth="1.5" />
-              <rect x="40" y="71" width="16" height="17" rx="1" fill="#FFFFFF" />
-              <g transform="translate(48, 75) scale(0.3)">
-                <path d={logoPath} stroke="#0055FF" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-                <rect x="-6.2" y="-7.7" width="3" height="3" fill="#0055FF" transform="rotate(45, -4.7, -6.2)" />
-              </g>
-              <line x1="43" y1="79" x2="53" y2="79" stroke="#CAD5E2" strokeWidth="1.2" />
-              <line x1="43" y1="83" x2="50" y2="83" stroke="#CAD5E2" strokeWidth="1.2" />
-              <path d="M 70,82 C 65,80 59,75 55,77" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <line x1="53" y1="71" x2="59" y2="79" stroke="#0055FF" strokeWidth="3.2" strokeLinecap="round" />
-              <circle cx="53" cy="71" r="0.8" fill="#FFFFFF" />
-            </>
-          ) : isSleeping ? (
-            <>
-              <path d="M 28,82 Q 38,90 50,88" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 72,82 Q 62,90 50,88" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <circle cx="50" cy="88" r="2.5" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              <g transform="translate(74, 20)">
-                <text x="0" y="0" fill="#00C2FF" fontSize="7" fontWeight="black" fontFamily="monospace" className="z1">Z</text>
-                <text x="4" y="-5" fill="#00E5FF" fontSize="5" fontWeight="bold" fontFamily="monospace" className="z2">z</text>
-                <text x="8" y="-10" fill="#38BDF8" fontSize="4.2" fontWeight="bold" fontFamily="monospace" className="z3">z</text>
-              </g>
-            </>
-          ) : isCelebrating ? (
-            <>
-              <path d="M 28,82 Q 16,74 20,62" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 72,82 Q 84,74 80,62" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 27.5,82 C 26.5,81 27,79.5 28.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <circle cx="20" cy="62" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              <circle cx="80" cy="62" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              <g transform="translate(69, 18)">
-                <circle cx="8" cy="8" r="8" fill="url(#checkGrad)" stroke="#FFFFFF" strokeWidth="1.5" />
-                <path d="M 5,8 L 7,10 L 11,6" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </g>
-            </>
-          ) : isThinking ? (
-            <>
-              <path d="M 28,82 C 22,85 24,91 26,95" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <circle cx="26" cy="95" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              <path d="M 72,82 Q 68,77 60,65" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <circle cx="60" cy="65" r="2.5" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-            </>
-          ) : isWorking ? (
-            <>
-              <path d="M 28,82 Q 33,78 37,74" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 72,82 Q 67,78 63,74" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <rect x="36" y="68" width="28" height="18" rx="2" fill="rgba(0,229,255,0.15)" stroke="#00E5FF" strokeWidth="1" className="neon-glow" filter="url(#glow)" />
-              <g transform="translate(50, 77) scale(0.45)">
-                <path d={logoPath} stroke="#00E5FF" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-                <rect x="-6.2" y="-7.7" width="3" height="3" fill="#00E5FF" transform="rotate(45, -4.7, -6.2)" />
-              </g>
-              <circle cx="37" cy="74" r="1.8" fill="#FFFFFF" />
-              <circle cx="63" cy="74" r="1.8" fill="#FFFFFF" />
-            </>
-          ) : isNotifying ? (
-            <>
-              <path d="M 28,82 C 22,85 24,91 26,95" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <circle cx="26" cy="95" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              <path d="M 70,82 Q 78,76 78,68" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <g transform="translate(78, 68)">
-                <path d="M -4,0 C -4,-2 -2,-4 0,-4 C 2,-4 4,-2 4,0 L 5,5 L -5,5 Z" fill="#00E5FF" className="neon-glow" filter="url(#glow)" />
-                <circle cx="0" cy="7" r="1" fill="#00E5FF" />
-                <circle cx="0" cy="1" r="6" stroke="#00E5FF" strokeWidth="0.8" fill="none" opacity="0.4" className="bob-group" />
-              </g>
-            </>
-          ) : isError ? (
-            <>
-              {/* ERROR (Arms resting/worrying gesture at sides) */}
-              {/* Left arm resting at side */}
-              <path d="M 28,82 C 22,85 24,91 26,95" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <circle cx="26" cy="95" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              {/* Solid blue wrapped cuffs on resting arm */}
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 24,91 C 23.5,92 24.5,93 25.5,94" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-
-              {/* Right arm resting at side */}
-              <path d="M 72,82 C 78,85 76,91 74,95" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <circle cx="74" cy="95" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              {/* Solid blue wrapped cuffs on right resting arm */}
-              <path d="M 71.5,82 C 72.5,83 72,84.5 70.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 76,91 C 76.5,92 75.5,93 74.5,94" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-            </>
-          ) : isWaiting ? (
-            <>
-              {/* WAITING (Right arm resting, left arm raised waiting/gesturing slightly) */}
-              {/* Right arm resting at side */}
-              <path d="M 28,82 C 22,85 24,91 26,95" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <circle cx="26" cy="95" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              {/* Solid blue wrapped cuffs on resting arm */}
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 24,91 C 23.5,92 24.5,93 25.5,94" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-
-              {/* Left arm raised slightly in a waiting pose */}
-              <path d="M 72,82 Q 78,79 78,73" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <circle cx="78" cy="73" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              {/* Solid blue wrapped cuffs on waving arm */}
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-            </>
-          ) : (
-            <>
-              <path d="M 28,82 C 22,85 24,91 26,95" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <circle cx="26" cy="95" r="2.2" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-              <path d="M 27.5,82 C 26.5,83 27,84.5 28.5,85" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 72,82 Q 81,77 85,71" fill="none" stroke="url(#headGrad)" strokeWidth="4.5" strokeLinecap="round" />
-              <path d="M 71.5,82 C 72.5,81 72,79.5 70.5,79" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <path d="M 78.5,76.5 C 79.5,75.5 80.5,76.5 81.5,77.5" stroke="url(#blueGrad)" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-              <g transform="translate(85, 71)">
-                <circle cx="0" cy="0" r="3" fill="#FFFFFF" stroke="#CAD5E2" strokeWidth="0.8" />
-                <path d="M -1,-3 L -2,-6" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-                <path d="M 1,-3 L 1,-7" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-                <path d="M 3,-2 L 4,-6" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-                <path d="M 3,1 L 6.2,-0.5" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-                <path d="M -3,-1 L -5.8,-2" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-              </g>
-            </>
-          )}
-
-        </g>
-      </svg>
+        {/* State indicator dot */}
+        {(isCelebrating || isThinking || isWorking || isError) && (
+          <span
+            className={`absolute top-0 right-0 w-3 h-3 rounded-full border-2 border-white animate-pulse z-30 ${
+              isCelebrating ? "bg-green-400" :
+              isError ? "bg-red-400" :
+              isThinking ? "bg-amber-400" :
+              "bg-blue-400"
+            }`}
+          />
+        )}
+      </div>
     );
   };
 
-  // Sleeping Z's elements
   const renderSleepZs = () => {
     return null;
   };
@@ -948,7 +720,9 @@ export function TechnosprintPet() {
             ${isDarkMode ? "bg-[#0B141A]" : "bg-white"}`}
           title="Click to restore Technosprint Pet"
         >
-          <span className="text-lg">🤖</span>
+          <span className="scale-[0.72]">
+            {renderMascotSVG()}
+          </span>
           <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-blue-500 text-[8px] font-bold text-white rounded-full flex items-center justify-center animate-pulse">
             +
           </span>
@@ -995,7 +769,7 @@ export function TechnosprintPet() {
         >
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="text-xl">🤖</span>
+              <img src="/assets/technosprint-pet/active.png" alt="Pet" className="w-8 h-8 object-contain" style={{ filter: "drop-shadow(0 3px 6px rgba(0,80,255,0.5))", transform: "perspective(100px) rotateX(-4deg)" }} />
               <div>
                 <h3 className="font-bold text-sm leading-none">Technosprint Pet</h3>
                 <span className="text-[9px] opacity-80 uppercase tracking-widest font-black">AI Ticket Companion</span>

@@ -129,6 +129,114 @@ ipcMain.handle('set-always-on-top', async (event, flag) => {
 });
 
 
+// ── NEW: 3D Pet Overlay Window ──
+let petOverlayWindow = null;
+
+function getVirtualScreenBounds() {
+  try {
+    const displays = screen.getAllDisplays();
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    displays.forEach((display) => {
+      const { x, y, width, height } = display.bounds;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x + width > maxX) maxX = x + width;
+      if (y + height > maxY) maxY = y + height;
+    });
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
+  } catch (err) {
+    console.error('[Electron] Failed to get virtual screen bounds, falling back to primary:', err);
+    const { width, height } = screen.getPrimaryDisplay().bounds;
+    return { x: 0, y: 0, width, height };
+  }
+}
+
+function createPetOverlay() {
+  if (petOverlayWindow) return;
+
+  const bounds = getVirtualScreenBounds();
+
+  petOverlayWindow = new BrowserWindow({
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    resizable: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'pet-overlay-preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    }
+  });
+
+  petOverlayWindow.setAlwaysOnTop(true, 'screen-saver');
+  petOverlayWindow.setIgnoreMouseEvents(true, { forward: true });
+  petOverlayWindow.loadFile(path.join(__dirname, 'pet-overlay.html'));
+
+  petOverlayWindow.on('closed', () => {
+    petOverlayWindow = null;
+  });
+}
+
+// IPC: tracker status or full state changed → forward to overlay
+ipcMain.on('pet-overlay-update', (event, data) => {
+  if (!petOverlayWindow) {
+    createPetOverlay();
+  }
+  if (petOverlayWindow) {
+    // Determine visibility from status or explicit visible flag
+    const shouldShow = Boolean(data.visible || data.status === 'active');
+    if (shouldShow) {
+      if (!petOverlayWindow.isVisible()) {
+        petOverlayWindow.showInactive();
+      }
+      // Re-assert always on top state to prevent other windows from covering it
+      petOverlayWindow.setAlwaysOnTop(true, 'screen-saver');
+    } else {
+      petOverlayWindow.hide();
+    }
+    petOverlayWindow.webContents.send('pet-state', data);
+  }
+});
+
+// IPC: dynamic click-through ignore coordination
+ipcMain.on('pet-set-ignore-mouse-events', (event, ignore, options) => {
+  if (petOverlayWindow && !petOverlayWindow.isDestroyed()) {
+    petOverlayWindow.setIgnoreMouseEvents(ignore, options);
+  }
+});
+
+// IPC: move pet to new position relative to main window (deprecated/no-op in global overlay mode)
+ipcMain.on('pet-overlay-move', (event, { x, y }) => {
+  // Safe no-op: in global overlay mode, the overlay window covers all displays
+  // at the virtual coordinate origin, and the pet moves inside the HTML document.
+});
+
+// Auto-adjust overlay bounds on monitor / resolution / layout changes
+screen.on('display-metrics-changed', () => {
+  if (petOverlayWindow) {
+    try {
+      const bounds = getVirtualScreenBounds();
+      petOverlayWindow.setBounds(bounds);
+    } catch (err) {
+      console.error('[Electron] Failed to update overlay bounds on display changes:', err);
+    }
+  }
+});
+
+
 /* ── IPC: get all screens (for multi-monitor) ── */
 ipcMain.handle('get-screens', async () => {
   try {
@@ -159,9 +267,13 @@ app.whenReady().then(async () => {
     console.warn('[Electron] Server wait timed out, opening anyway');
   }
   createWindow();
+  createPetOverlay();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+      createPetOverlay();
+    }
   });
 });
 

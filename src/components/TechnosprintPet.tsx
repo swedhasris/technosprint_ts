@@ -30,8 +30,6 @@ type PetState =
   | "SUCCESS"
   | "ERROR";
 
-
-
 interface TicketData {
   id: string;
   ticket_number?: string;
@@ -144,11 +142,20 @@ export function TechnosprintPet() {
 
             if (change.type === "added") {
               if (ticket.createdBy === user.uid) {
+                // Play visual sequence for creation and submission
                 triggerBubble(`Ticket ${ticketNum} created successfully! I've noted it with care. 📝`);
-                setPetState("ACTIVE");
+                setPetState("WRITING");
+                setTimeout(() => {
+                  setPetState("SUCCESS");
+                }, 2000);
               }
             } else if (change.type === "modified" && cachedStatus !== ticket.status) {
-              if (ticket.status === "Resolved") {
+              const priority = ticket.priority;
+              
+              if (priority?.includes("Critical")) {
+                triggerBubble(`Warning: Critical incident ${ticketNum} has been updated! ⚠️`);
+                setPetState("ALERT");
+              } else if (ticket.status === "Resolved") {
                 triggerBubble(`Good news! Ticket ${ticketNum} has been resolved! 🌟`);
                 setPetState("RESOLVED");
               } else if (ticket.status === "Closed") {
@@ -156,16 +163,16 @@ export function TechnosprintPet() {
                 setPetState("CLOSED");
               } else if (ticket.status === "In Progress") {
                 triggerBubble(`Work is currently underway on ticket ${ticketNum}! 🚀`);
-                setPetState("IN_PROGRESS");
+                setPetState("WORKING");
               } else if (ticket.status === "On Hold") {
                 triggerBubble(`Ticket ${ticketNum} is temporarily on hold. ⏱`);
                 setPetState("ON_HOLD");
               } else if (ticket.assignedTo === user.uid && cachedStatus !== "Assigned") {
                 triggerBubble(`A technician has been assigned to ticket ${ticketNum}! 🔧`);
-                setPetState("ASSIGNED");
+                setPetState("WORKING");
               } else {
                 triggerBubble(`Your ticket ${ticketNum} has been updated.`);
-                setPetState("ACTIVE");
+                setPetState("THINKING");
               }
             }
           }
@@ -197,11 +204,16 @@ export function TechnosprintPet() {
       const activeTicket = userTickets.find(t => t.id === ticketId);
       if (activeTicket) {
         const status = activeTicket.status;
-        if (status === "Resolved") setPetState("RESOLVED");
+        const priority = activeTicket.priority;
+
+        if (priority?.includes("Critical")) {
+          setPetState("ALERT");
+          setBubbleText("This is a CRITICAL incident! High priority handling required!");
+        } else if (status === "Resolved") setPetState("RESOLVED");
         else if (status === "Closed") setPetState("CLOSED");
         else if (status === "On Hold" || status === "Pending") setPetState("ON_HOLD");
-        else if (status === "In Progress") setPetState("IN_PROGRESS");
-        else if (status === "Assigned") setPetState("ASSIGNED");
+        else if (status === "In Progress") setPetState("WORKING");
+        else if (status === "Assigned") setPetState("WORKING");
         else setPetState("ACTIVE");
       }
     } else {
@@ -217,7 +229,7 @@ export function TechnosprintPet() {
         setPetState("ACTIVE");
       } else if (path === "/kb") {
         setBubbleText("Search articles to resolve issues faster!");
-        setPetState("PENDING");
+        setPetState("SEARCHING");
       } else if (path === "/reports") {
         setBubbleText("View performance insights and SLA stats.");
         setPetState("ACTIVE");
@@ -242,7 +254,7 @@ export function TechnosprintPet() {
       if (isUserInactive) {
         // Wake up!
         isUserInactive = false;
-        setPetState("WAVING");
+        setPetState("ACTIVE");
         triggerBubble("Welcome back.");
       }
       
@@ -251,7 +263,7 @@ export function TechnosprintPet() {
       idleTimer = setTimeout(() => {
         // Go to sleep!
         isUserInactive = true;
-        setPetState("SLEEPING");
+        setPetState("WAITING");
         triggerBubble("I'm here whenever you need me.");
       }, idleTimeoutMs);
     };
@@ -328,7 +340,7 @@ export function TechnosprintPet() {
           triggerBubble(`AI Task Completed: ${taskName} ✓`);
           setTimeout(() => {
             setAiTask("");
-            setPetState("WAVING");
+            setPetState("ACTIVE");
           }, 3000);
         }
         return response;
@@ -338,7 +350,7 @@ export function TechnosprintPet() {
           triggerBubble(`AI Task Failed: ${taskName} ⚠`);
           setTimeout(() => {
             setAiTask("");
-            setPetState("WAVING");
+            setPetState("ACTIVE");
           }, 3000);
         }
         throw error;
@@ -437,10 +449,8 @@ export function TechnosprintPet() {
     localStorage.setItem("technosprint_pet_minimized", String(newMin));
   };
 
-  // Render official SVG Mascot based on current expression
+  // Render official PNG Mascot based on current expression
   const renderMascotSVG = () => {
-    const logoPath = "M 0,0 C -4.6,-4.6 -9.2,-4.6 -9.2,0 C -9.2,4.6 -4.6,4.6 0,0 C 4.6,-4.6 9.2,-4.6 9.2,0 C 9.2,4.6 4.6,4.6 0,0 Z";
-
     const getVisualState = (state: PetState): "HAPPY" | "THINKING" | "WRITING" | "SLEEPING" | "CELEBRATING" | "WORKING" | "WAVING" | "NOTIFYING" | "ERROR" | "WAITING" => {
       switch (state) {
         case "HAPPY":
@@ -478,213 +488,183 @@ export function TechnosprintPet() {
     };
 
     const visualState = getVisualState(petState);
-    const isThinking = visualState === "THINKING";
     const isSleeping = visualState === "SLEEPING";
+    const isThinking = visualState === "THINKING";
     const isCelebrating = visualState === "CELEBRATING";
-    const isWorking = visualState === "WORKING" || visualState === "WRITING";
+    const isWorking = visualState === "WORKING";
     const isError = visualState === "ERROR";
-    const isWaiting = visualState === "WAITING";
-    const isWaving =
-      visualState === "WAVING" ||
-      visualState === "HAPPY" ||
-      visualState === "NOTIFYING" ||
-      visualState === "CELEBRATING";
 
-    const renderFace = () => {
-      if (isSleeping) {
-        return (
-          <>
-            <path d="M 37 50 C 40 45, 44 45, 47 50" fill="none" stroke="#35C8FF" strokeWidth="3.8" strokeLinecap="round" filter="url(#glow)" />
-            <path d="M 53 50 C 56 45, 60 45, 63 50" fill="none" stroke="#35C8FF" strokeWidth="3.8" strokeLinecap="round" filter="url(#glow)" />
-            <path d="M 46 59 C 48 61, 52 61, 54 59" fill="none" stroke="#35C8FF" strokeWidth="3.2" strokeLinecap="round" filter="url(#glow)" />
-          </>
-        );
+    const getPetImage = (state: string): string => {
+      const normalized = String(state || "").toUpperCase();
+      switch (normalized) {
+        case "ACTIVE":
+        case "WAVING":
+        case "HAPPY":
+          return "/assets/technosprint-pet/active.png";
+        case "PENDING":
+          return "/assets/technosprint-pet/pending.png";
+        case "WORKING":
+        case "IN_PROGRESS":
+        case "ASSIGNED":
+          return "/assets/technosprint-pet/working.png";
+        case "WRITING":
+          return "/assets/technosprint-pet/writing.png";
+        case "THINKING":
+          return "/assets/technosprint-pet/thinking.png";
+        case "ASSISTING":
+        case "NOTIFYING":
+          return "/assets/technosprint-pet/assisting.png";
+        case "SUCCESS":
+          return "/assets/technosprint-pet/success.png";
+        case "CELEBRATING":
+        case "CELEBRATION":
+          return "/assets/technosprint-pet/celebration.png";
+        case "SEARCHING":
+          return "/assets/technosprint-pet/searching.png";
+        case "WAITING":
+        case "IDLE":
+        case "SLEEPING":
+          return "/assets/technosprint-pet/waiting.png";
+        case "CONCERNED":
+          return "/assets/technosprint-pet/concerned.png";
+        case "ALERT":
+        case "ERROR":
+          return "/assets/technosprint-pet/alert.png";
+        case "ON_HOLD":
+        case "ON HOLD":
+          return "/assets/technosprint-pet/onhold.png";
+        case "RESOLVED":
+          return "/assets/technosprint-pet/resolved.png";
+        case "CLOSED":
+          return "/assets/technosprint-pet/closed.png";
+        default:
+          return "/assets/technosprint-pet/active.png";
       }
-
-      if (isThinking) {
-        return (
-          <>
-            <circle cx="40" cy="48" r="2.8" fill="#35C8FF" filter="url(#glow)" />
-            <path d="M 54 49 C 57 44, 61 44, 64 49" fill="none" stroke="#35C8FF" strokeWidth="3.6" strokeLinecap="round" filter="url(#glow)" />
-            <path d="M 46 58 C 48 57, 52 57, 54 58" fill="none" stroke="#35C8FF" strokeWidth="3" strokeLinecap="round" filter="url(#glow)" />
-          </>
-        );
-      }
-
-      if (isError) {
-        return (
-          <>
-            <path d="M 36 45 L 42 51" stroke="#35C8FF" strokeWidth="3.2" strokeLinecap="round" filter="url(#glow)" />
-            <path d="M 42 45 L 36 51" stroke="#35C8FF" strokeWidth="3.2" strokeLinecap="round" filter="url(#glow)" />
-            <path d="M 58 45 L 64 51" stroke="#35C8FF" strokeWidth="3.2" strokeLinecap="round" filter="url(#glow)" />
-            <path d="M 64 45 L 58 51" stroke="#35C8FF" strokeWidth="3.2" strokeLinecap="round" filter="url(#glow)" />
-            <path d="M 46 60 C 49 56, 51 56, 54 60" fill="none" stroke="#35C8FF" strokeWidth="3" strokeLinecap="round" filter="url(#glow)" />
-          </>
-        );
-      }
-
-      if (isWorking) {
-        return (
-          <>
-            <circle cx="40" cy="48" r="2.7" fill="#35C8FF" filter="url(#glow)" />
-            <circle cx="60" cy="48" r="2.7" fill="#35C8FF" filter="url(#glow)" />
-            <path d="M 47 58 C 49 59, 51 59, 53 58" fill="none" stroke="#35C8FF" strokeWidth="3" strokeLinecap="round" filter="url(#glow)" />
-          </>
-        );
-      }
-
-      if (isWaiting) {
-        return (
-          <>
-            <path d="M 35 50 C 38 45, 42 45, 45 50" fill="none" stroke="#35C8FF" strokeWidth="3.8" strokeLinecap="round" filter="url(#glow)" />
-            <circle cx="60" cy="48" r="2.8" fill="#35C8FF" filter="url(#glow)" />
-            <path d="M 46 59 C 48 61, 52 61, 54 59" fill="none" stroke="#35C8FF" strokeWidth="3.2" strokeLinecap="round" filter="url(#glow)" />
-          </>
-        );
-      }
-
-      return (
-        <>
-          <path d="M 34 50 C 37 44, 43 44, 46 50" fill="none" stroke="#35C8FF" strokeWidth="4.1" strokeLinecap="round" filter="url(#glow)" />
-          <path d="M 54 50 C 57 44, 63 44, 66 50" fill="none" stroke="#35C8FF" strokeWidth="4.1" strokeLinecap="round" filter="url(#glow)" />
-          <path d="M 46 59 C 48 62, 52 62, 54 59" fill="none" stroke="#35C8FF" strokeWidth="3.4" strokeLinecap="round" filter="url(#glow)" />
-        </>
-      );
     };
+    const petImageSrc = getPetImage(petState);
+
+    // 3D perspective tilt per state
+    const stateTilt: React.CSSProperties = (() => {
+      switch (visualState) {
+        case "SLEEPING": return { transform: "perspective(200px) rotateX(8deg) rotateY(4deg) rotateZ(6deg)" };
+        case "THINKING": return { transform: "perspective(200px) rotateX(-4deg) rotateY(-6deg)" };
+        case "CELEBRATING": return { transform: "perspective(200px) rotateX(-6deg) rotateY(3deg)" };
+        case "WORKING": return { transform: "perspective(200px) rotateX(-3deg) rotateY(-3deg)" };
+        case "ERROR": return { transform: "perspective(200px) rotateX(5deg) rotateY(5deg)" };
+        default: return { transform: "perspective(200px) rotateX(-2deg) rotateY(0deg)" };
+      }
+    })();
+
+    // State-based styles for the 3D pet image
+    const stateStyle: React.CSSProperties = (() => {
+      switch (visualState) {
+        case "SLEEPING":
+          return { filter: "brightness(0.6) saturate(0.5)", opacity: 0.85 };
+        case "THINKING":
+          return { filter: "hue-rotate(30deg) brightness(1.05)", opacity: 1 };
+        case "CELEBRATING":
+          return { filter: "brightness(1.3) saturate(1.6) drop-shadow(0 0 12px #22C55E)", opacity: 1 };
+        case "WORKING":
+          return { filter: "hue-rotate(-20deg) brightness(1.1) saturate(1.3)", opacity: 1 };
+        case "ERROR":
+          return { filter: "hue-rotate(140deg) brightness(1.1) saturate(1.4)", opacity: 1 };
+        case "WRITING":
+          return { filter: "brightness(1.05) saturate(1.2)", opacity: 1 };
+        default:
+          return { filter: "brightness(1.1) drop-shadow(0 0 10px rgba(0,102,255,0.5))", opacity: 1 };
+      }
+    })();
+
+    const stateClass = (() => {
+      if (isCelebrating) return "codex-pet-celebrate";
+      if (isSleeping) return "codex-pet-sleep";
+      if (isThinking || isWorking) return "codex-pet-think";
+      return "codex-pet-float";
+    })();
 
     return (
-      <svg
-        viewBox="0 0 100 100"
-        className={`w-16 h-16 transition-all duration-300 drop-shadow-[0_4px_12px_rgba(0,102,255,0.35)] ${isDragging ? "scale-105 cursor-grabbing" : "cursor-grab"}`}
+      <div
+        className="relative"
+        style={{
+          filter: "drop-shadow(0 8px 16px rgba(0,80,255,0.35)) drop-shadow(0 2px 4px rgba(0,0,0,0.4))",
+          ...stateTilt,
+          transition: "transform 0.6s cubic-bezier(0.34,1.56,0.64,1), filter 0.4s ease"
+        }}
       >
-        <defs>
-          <linearGradient id="shellGrad" x1="18%" y1="10%" x2="82%" y2="92%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="50%" stopColor="#F2F6FF" />
-            <stop offset="100%" stopColor="#CED7E6" />
-          </linearGradient>
-          <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#55D7FF" />
-            <stop offset="50%" stopColor="#2386FF" />
-            <stop offset="100%" stopColor="#2156D9" />
-          </linearGradient>
-          <linearGradient id="visorGrad" x1="50%" y1="8%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="#131A29" />
-            <stop offset="60%" stopColor="#080D16" />
-            <stop offset="100%" stopColor="#03060C" />
-          </linearGradient>
-          <radialGradient id="visorGlow" cx="50%" cy="45%" r="55%">
-            <stop offset="0%" stopColor="#1F8BFF" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="#1F8BFF" stopOpacity="0" />
-          </radialGradient>
-          <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+        {/* 3D ambient halo */}
+        <div
+          className="absolute inset-0 rounded-full blur-xl opacity-40 pointer-events-none transition-all duration-500"
+          style={{
+            background: isCelebrating
+              ? "radial-gradient(circle, #22C55E 0%, transparent 70%)"
+              : isError
+              ? "radial-gradient(circle, #EF4444 0%, transparent 70%)"
+              : isThinking
+              ? "radial-gradient(circle, #F59E0B 0%, transparent 70%)"
+              : "radial-gradient(circle, #3B82F6 0%, transparent 70%)",
+            transform: "translateY(6px) scaleX(0.85)"
+          }}
+        />
 
-        <ellipse cx="50" cy="95" rx="22" ry="4" fill="#08101F" opacity="0.2" />
+        {/* Main 3D pet image */}
+        <img
+          src={petImageSrc}
+          alt="Technosprint Pet"
+          draggable={false}
+          style={{
+            ...stateStyle,
+            filter: [
+              stateStyle.filter,
+              "drop-shadow(0 4px 8px rgba(0,60,200,0.4))",
+              "drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+            ].filter(Boolean).join(" ")
+          }}
+          className={`w-20 h-20 transition-all duration-500 select-none object-contain relative z-10 ${
+            isDragging ? "scale-105 cursor-grabbing" : `cursor-grab ${stateClass}`
+          }`}
+        />
 
-        <g>
-          <g transform="translate(63 5) rotate(38)">
-            <rect x="-5.5" y="0" width="11" height="24" rx="5.5" fill="url(#blueGrad)" />
-            <rect x="-4" y="1.5" width="8" height="19" rx="4" fill="#91E9FF" opacity="0.28" />
-          </g>
+        {/* Glossy specular highlight overlay */}
+        <div
+          className="absolute top-1 left-2 w-8 h-5 rounded-full pointer-events-none z-20 opacity-20"
+          style={{
+            background: "radial-gradient(ellipse at 40% 30%, rgba(255,255,255,0.9), transparent 70%)",
+            transform: "rotate(-15deg)"
+          }}
+        />
 
-          <ellipse cx="20" cy="44" rx="7" ry="10.5" fill="url(#blueGrad)" stroke="#1B4EB4" strokeWidth="1" />
-          <ellipse cx="80" cy="44" rx="7" ry="10.5" fill="url(#blueGrad)" stroke="#1B4EB4" strokeWidth="1" />
-          <g transform="translate(20 44) scale(0.42)">
-            <path d={logoPath} fill="none" stroke="#EDF7FF" strokeWidth="3.6" strokeLinecap="round" />
-            <rect x="-6.1" y="-7.6" width="3" height="3" fill="#EDF7FF" transform="rotate(45 -4.6 -6.1)" />
-          </g>
+        {/* Ground glow */}
+        <div
+          className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-14 h-3 rounded-full blur-md opacity-50 transition-all duration-500 z-0"
+          style={{
+            background: isCelebrating
+              ? "radial-gradient(ellipse, #22C55E, transparent)"
+              : isError
+              ? "radial-gradient(ellipse, #EF4444, transparent)"
+              : isThinking
+              ? "radial-gradient(ellipse, #F59E0B, transparent)"
+              : "radial-gradient(ellipse, #3B82F6, transparent)"
+          }}
+        />
 
-          <path
-            d="M 22 41 C 22 21, 35 14, 50 14 C 65 14, 78 21, 78 41 C 78 57, 67 71, 50 71 C 33 71, 22 57, 22 41 Z"
-            fill="url(#shellGrad)"
-            stroke="#DCE4F0"
-            strokeWidth="1.2"
+        {/* State indicator dot */}
+        {(isCelebrating || isThinking || isWorking || isError) && (
+          <span
+            className={`absolute top-0 right-0 w-3 h-3 rounded-full border-2 border-white animate-pulse z-30 ${
+              isCelebrating ? "bg-green-400" :
+              isError ? "bg-red-400" :
+              isThinking ? "bg-amber-400" :
+              "bg-blue-400"
+            }`}
           />
-          <path
-            d="M 27 39 C 27 28, 36 22, 50 22 C 64 22, 73 28, 73 39 L 73 50 C 73 62, 65 67, 50 67 C 35 67, 27 62, 27 50 Z"
-            fill="url(#visorGrad)"
-            stroke="#20293A"
-            strokeWidth="1.2"
-          />
-          <ellipse cx="50" cy="44" rx="20" ry="17" fill="url(#visorGlow)" />
-          <path d="M 29 25 C 37 19, 52 17, 66 21" fill="none" stroke="#FFFFFF" strokeWidth="2.1" strokeLinecap="round" opacity="0.4" />
-
-          <g transform="translate(54 34) scale(0.72)">
-            <path d={logoPath} fill="none" stroke="url(#blueGrad)" strokeWidth="4" strokeLinecap="round" filter="url(#glow)" />
-            <rect x="-6.1" y="-7.6" width="3" height="3" fill="#74E2FF" transform="rotate(45 -4.6 -6.1)" filter="url(#glow)" />
-          </g>
-
-          {renderFace()}
-
-          <ellipse cx="50" cy="73" rx="10" ry="2.6" fill="#08101F" opacity="0.7" />
-
-          <path
-            d="M 33 73 C 33 65, 39 61, 50 61 C 61 61, 67 65, 67 73 L 67 89 C 67 95, 61 98, 50 98 C 39 98, 33 95, 33 89 Z"
-            fill="url(#shellGrad)"
-            stroke="#DCE4F0"
-            strokeWidth="1.1"
-          />
-          <g transform="translate(50 82.5) scale(0.9)">
-            <path d={logoPath} fill="none" stroke="url(#blueGrad)" strokeWidth="3.8" strokeLinecap="round" />
-            <rect x="-6.1" y="-7.6" width="3" height="3" fill="#74E2FF" transform="rotate(45 -4.6 -6.1)" />
-          </g>
-
-          <path d="M 34 78 C 26 80, 24 89, 28 96" fill="none" stroke="url(#shellGrad)" strokeWidth="10" strokeLinecap="round" />
-          <path d="M 32 78 C 30 79, 29 81, 29 84" fill="none" stroke="#1D58C8" strokeWidth="4.2" strokeLinecap="round" />
-          <path d="M 27 89 C 26 92, 27 94, 29 95.5" fill="none" stroke="#1D58C8" strokeWidth="4.2" strokeLinecap="round" />
-          <circle cx="29" cy="96" r="4.9" fill="#FFFFFF" stroke="#DCE4F0" strokeWidth="1" />
-
-          {isWaving ? (
-            <>
-              <path d="M 66 77 C 75 73, 82 64, 81 54" fill="none" stroke="url(#shellGrad)" strokeWidth="10" strokeLinecap="round" />
-              <path d="M 68 77 C 70 76, 72 72, 73 69" fill="none" stroke="#1D58C8" strokeWidth="4.2" strokeLinecap="round" />
-              <g transform="translate(80 53) rotate(-12)">
-                <path
-                  d="M -3 9 C -6 6, -6 0, -2 -3 C 0 -5, 3 -4, 4 -1 C 5 -4, 8 -4, 10 -2 C 12 0, 12 3, 10 5 C 12 7, 12 10, 9 12 C 7 14, 3 14, 1 12 C -1 13, -3 12, -4 10 Z"
-                  fill="#FFFFFF"
-                  stroke="#DCE4F0"
-                  strokeWidth="1"
-                />
-              </g>
-            </>
-          ) : isThinking ? (
-            <>
-              <path d="M 66 77 C 72 76, 73 70, 67 64" fill="none" stroke="url(#shellGrad)" strokeWidth="10" strokeLinecap="round" />
-              <path d="M 68 77 C 69 75, 69 72, 68 70" fill="none" stroke="#1D58C8" strokeWidth="4.2" strokeLinecap="round" />
-              <circle cx="65.5" cy="62.5" r="4.6" fill="#FFFFFF" stroke="#DCE4F0" strokeWidth="1" />
-            </>
-          ) : (
-            <>
-              <path d="M 66 77 C 74 79, 76 88, 72 95" fill="none" stroke="url(#shellGrad)" strokeWidth="10" strokeLinecap="round" />
-              <path d="M 68 77 C 70 78, 71 81, 71 84" fill="none" stroke="#1D58C8" strokeWidth="4.2" strokeLinecap="round" />
-              <circle cx="72" cy="95" r="4.9" fill="#FFFFFF" stroke="#DCE4F0" strokeWidth="1" />
-            </>
-          )}
-
-          {isCelebrating && (
-            <g transform="translate(68 18)">
-              <circle cx="7.5" cy="7.5" r="7.5" fill="#22C55E" stroke="#FFFFFF" strokeWidth="1.5" />
-              <path d="M 4.5 7.5 L 6.5 9.5 L 10.5 5.7" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </g>
-          )}
-        </g>
-      </svg>
+        )}
+      </div>
     );
   };
 
-
-  // Sleeping Z's elements
   const renderSleepZs = () => {
     return null;
   };
-
 
   return (
     <div
@@ -705,7 +685,7 @@ export function TechnosprintPet() {
         </div>
       )}
 
-      {/* ── Speech Bubble (Context or Notification toast) ── */}
+      {/* Speech Bubble */}
       {showBubble && bubbleText && !isMinimized && (
         <div
           className={`absolute bottom-20 right-4 w-52 p-3 rounded-2xl shadow-xl text-xs leading-normal font-semibold transition-all duration-300 border animate-fade-in-up
@@ -721,7 +701,6 @@ export function TechnosprintPet() {
             <button onClick={() => setShowBubble(false)} className="text-gray-400 hover:text-red-500 font-bold leading-none">×</button>
           </div>
           <p className="whitespace-pre-wrap">{bubbleText}</p>
-          {/* Arrow */}
           <div
             className={`absolute bottom-[-6px] right-6 w-3 h-3 rotate-45 border-r border-b
               ${isDarkMode ? "bg-[#151B26] border-[#2d3748]" : "bg-white border-gray-100"}`}
@@ -729,7 +708,7 @@ export function TechnosprintPet() {
         </div>
       )}
 
-      {/* ── Minimized Floating Action Circular Bubble ── */}
+      {/* Minimized Action Circle */}
       {isMinimized ? (
         <button
           onClick={handleMinimizeToggle}
@@ -739,19 +718,20 @@ export function TechnosprintPet() {
             ${isDarkMode ? "bg-[#0B141A]" : "bg-white"}`}
           title="Click to restore Technosprint Pet"
         >
-          <span className="text-lg">🤖</span>
+          <span className="scale-[0.72]">
+            {renderMascotSVG()}
+          </span>
           <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-blue-500 text-[8px] font-bold text-white rounded-full flex items-center justify-center animate-pulse">
             +
           </span>
         </button>
       ) : (
-        /* ── Full Interactive Mascot Body ── */
+        /* Full Mascot Body */
         <div
           className="relative flex flex-col items-center group"
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
         >
-          {/* Small floating actions on hover */}
           <div className="absolute top-[-20px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1.5 bg-[#0B141A]/80 backdrop-blur-sm px-2 py-1 rounded-full border border-white/10 z-10">
             <button
               onClick={handleMinimizeToggle}
@@ -769,7 +749,6 @@ export function TechnosprintPet() {
             </button>
           </div>
 
-          {/* SVG representation + sleepy bubble */}
           <div className="relative cursor-grab active:cursor-grabbing" onClick={() => setIsOpen(prev => !prev)}>
             {renderMascotSVG()}
             {renderSleepZs()}
@@ -777,7 +756,7 @@ export function TechnosprintPet() {
         </div>
       )}
 
-      {/* ── EXPANDED ASSISTANT PANEL ── */}
+      {/* Expanded Assistant Panel */}
       {isOpen && !isMinimized && (
         <div
           className={`absolute bottom-20 right-0 w-80 rounded-2xl shadow-2xl overflow-hidden border animate-fade-in-up
@@ -786,10 +765,9 @@ export function TechnosprintPet() {
               : "bg-white/95 border-gray-100 text-gray-800 backdrop-blur-md"}`}
           style={{ transformOrigin: "bottom right" }}
         >
-          {/* Header Panel */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 text-white flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="text-xl">🤖</span>
+              <img src="/assets/technosprint-pet/active.png" alt="Pet" className="w-8 h-8 object-contain" style={{ filter: "drop-shadow(0 3px 6px rgba(0,80,255,0.5))", transform: "perspective(100px) rotateX(-4deg)" }} />
               <div>
                 <h3 className="font-bold text-sm leading-none">Technosprint Pet</h3>
                 <span className="text-[9px] opacity-80 uppercase tracking-widest font-black">AI Ticket Companion</span>
@@ -803,9 +781,7 @@ export function TechnosprintPet() {
             </button>
           </div>
 
-          {/* Body Panel */}
           <div className="p-4 space-y-4 max-h-[380px] overflow-y-auto">
-            {/* Context greeting */}
             <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs flex items-start gap-2.5">
               <Sparkles className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5 animate-pulse" />
               <p className="font-medium text-blue-500 leading-relaxed">{bubbleText}</p>
@@ -823,7 +799,6 @@ export function TechnosprintPet() {
               </div>
             )}
 
-            {/* Live Metrics Grid */}
             <div className="grid grid-cols-2 gap-2.5">
               {[
                 { label: "Open Tickets", value: counts.open, icon: List, color: "text-blue-500" },
@@ -842,7 +817,6 @@ export function TechnosprintPet() {
               ))}
             </div>
 
-            {/* Recent Ticket Activity */}
             <div className="space-y-2">
               <div className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Recent Ticket Activity</div>
               {recentActivity.length === 0 ? (
@@ -880,7 +854,6 @@ export function TechnosprintPet() {
             </div>
           </div>
 
-          {/* Quick Actions Panel Footer */}
           <div className={`p-3 border-t flex flex-wrap gap-1.5 justify-center
             ${isDarkMode ? "border-white/5 bg-[#0B141A]/50" : "border-gray-100 bg-gray-50"}`}>
             {[
