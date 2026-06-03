@@ -19,6 +19,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Set main window always on top */
   setAlwaysOnTop: (flag) => ipcRenderer.invoke('set-always-on-top', flag),
 
+  /** Listen for stop tracker click from global overlay window */
+  onStopTracker: (callback) => {
+    const listener = (event) => callback();
+    ipcRenderer.on('stop-activity-tracker', listener);
+    return () => {
+      ipcRenderer.removeListener('stop-activity-tracker', listener);
+    };
+  },
+
   /** Expose 3D pet companion controls */
   updatePetStatus: (stateOrStatus, mood, entries) => {
     if (stateOrStatus && typeof stateOrStatus === 'object') {

@@ -54,6 +54,25 @@ export function AITrackerPet() {
   const [isDisappearing, setIsDisappearing] = useState(false);
   const [facingLeft, setFacingLeft] = useState(false);
 
+  // ── Log and Panel states ──
+  interface LogEntry {
+    timestamp: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    message: string;
+  }
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [showLogPanel, setShowLogPanel] = useState(false);
+
+  const addLog = useCallback((message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    const timeStr = new Date().toLocaleTimeString();
+    setLogs(prev => {
+      if (prev.length > 0 && prev[prev.length - 1].message === message && prev[prev.length - 1].timestamp === timeStr) {
+        return prev;
+      }
+      return [...prev, { timestamp: timeStr, type, message }].slice(-50);
+    });
+  }, []);
+
   // ── Drag, Scale, Minimize configs ──
   const [position, setPosition] = useState<Waypoint>({
     x: window.innerWidth - 140,
@@ -78,8 +97,7 @@ export function AITrackerPet() {
   const prevErrorRef = useRef<string | null>(null);
   const prevSummaryRef = useRef<string | null>(null);
   const prevScreenshotUrlRef = useRef<string | null>(null);
-
-
+  const prevTrackerStateRef = useRef<TrackerOverlayState | null>(null);
 
   // ── Load saved configurations on mount ──
   useEffect(() => {
@@ -155,30 +173,49 @@ export function AITrackerPet() {
 
   // ── Mount: tracker becomes active ──
   useEffect(() => {
-    if (isTrackerActive && !visible && !isDisappearing) {
-      isMountedRef.current = true;
-      prevEntriesLenRef.current = 0;
-      prevLastProcessingRef.current = undefined;
-      prevErrorRef.current = null;
-      prevSummaryRef.current = null;
+    if (isTrackerActive) {
+      if (!visible && !isDisappearing) {
+        isMountedRef.current = true;
+        prevEntriesLenRef.current = 0;
+        prevLastProcessingRef.current = undefined;
+        prevErrorRef.current = null;
+        prevSummaryRef.current = null;
 
-      setVisible(true);
-      setIsDisappearing(false);
+        setVisible(true);
+        setIsDisappearing(false);
+      }
+      addLog("Tracker ON (Started)", "info");
     }
   }, [isTrackerActive]);
 
   // ── Unmount: tracker becomes inactive ──
   useEffect(() => {
-    if (!isTrackerActive && visible && !isDisappearing) {
-      setIsDisappearing(true);
-      const timer = setTimeout(() => {
-        isMountedRef.current = false;
-        setVisible(false);
-        setIsDisappearing(false);
-      }, 1000);
-      return () => clearTimeout(timer);
+    if (!isTrackerActive) {
+      addLog("Tracker OFF (Stopped)", "warning");
+      if (visible && !isDisappearing) {
+        setIsDisappearing(true);
+        const timer = setTimeout(() => {
+          isMountedRef.current = false;
+          setVisible(false);
+          setIsDisappearing(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [isTrackerActive]);
+
+  // ── Listen for Electron stop watcher IPC ──
+  useEffect(() => {
+    if ((window as any).electronAPI?.onStopTracker) {
+      const unsubscribe = (window as any).electronAPI.onStopTracker(() => {
+        tracker.stopWatcher();
+        addLog("Stopped via Global Desktop Widget", "warning");
+      });
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, [tracker, addLog]);
 
   // ── React to tracker entries ──
   useEffect(() => {
@@ -277,6 +314,36 @@ export function AITrackerPet() {
     }
   }, [trackerStatus, trackerEntries, trackerError, isTrackerActive]);
 
+  // ── State Log Transition Effect ──
+  useEffect(() => {
+    if (!isTrackerActive) return;
+    if (trackerState === prevTrackerStateRef.current) return;
+    prevTrackerStateRef.current = trackerState;
+
+    switch (trackerState) {
+      case "ACTIVE":
+        addLog("AI Activity Tracker Running", "info");
+        break;
+      case "CAPTURED":
+        addLog("Screenshot Captured Successfully", "success");
+        break;
+      case "UPLOADING":
+        addLog("Uploading Screen Capture...", "info");
+        break;
+      case "PROCESSING":
+        addLog("Analyzing Activity with GenAI...", "info");
+        break;
+      case "PAUSED":
+        addLog("Tracker Paused (Idle Inactivity)", "warning");
+        break;
+      case "ERROR":
+        addLog(`Tracker Error: ${trackerError || 'System failure'}`, "error");
+        break;
+      default:
+        break;
+    }
+  }, [trackerState, trackerError, isTrackerActive, addLog]);
+
   // ── Sync with Electron Pet Overlay ──
   useEffect(() => {
     if ((window as any).electronAPI?.isElectron) {
@@ -296,9 +363,10 @@ export function AITrackerPet() {
         facingLeft,
         labelText: trackerStatusText,
         showLabel: true,
+        logs,
       });
     }
-  }, [isTrackerActive, trackerState, trackerStatusText, lastCaptureTime, heartbeatTrigger, facingLeft]);
+  }, [isTrackerActive, trackerState, trackerStatusText, lastCaptureTime, heartbeatTrigger, facingLeft, logs]);
 
 
 
@@ -411,11 +479,31 @@ export function AITrackerPet() {
           <button
             onClick={(e) => {
               e.stopPropagation();
+              tracker.stopWatcher();
+            }}
+            className="atp-btn atp-btn-stop"
+            title="Stop AI Activity Tracker"
+          >
+            🛑
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowLogPanel(prev => !prev);
+            }}
+            className={`atp-btn atp-btn-log ${showLogPanel ? "active" : ""}`}
+            title="Toggle Activity Logs"
+          >
+            📜
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
               setIsMinimized(true);
               localStorage.setItem('react_pet_minimized', 'true');
             }}
             className="atp-btn"
-            title="Minimize"
+            title="Hide Overlay"
           >
             _
           </button>
@@ -423,13 +511,35 @@ export function AITrackerPet() {
       )}
 
       {/* ── Glassmorphic Tooltip Speech Bubble ── */}
-      {!isMinimized && (
+      {!isMinimized && !showLogPanel && (
         <div className="atp-hover-tooltip">
           <span className="atp-tooltip-title">{trackerStatusText}</span>
           <span className="atp-tooltip-sub">
             <span className="atp-heartbeat-dot"></span>
             {lastCaptureTime ? `Captured: ${lastCaptureTime}` : "Heartbeat Active"}
           </span>
+        </div>
+      )}
+
+      {/* ── Real-Time Activity Logs Dropdown Panel ── */}
+      {!isMinimized && showLogPanel && (
+        <div className="atp-log-panel">
+          <div className="atp-log-header">
+            <span>Tracker Activity Logs</span>
+            <button className="atp-log-close" onClick={(e) => { e.stopPropagation(); setShowLogPanel(false); }}>×</button>
+          </div>
+          <div className="atp-log-body">
+            {logs.length === 0 ? (
+              <div className="atp-log-empty">No activity logs recorded.</div>
+            ) : (
+              logs.slice().reverse().map((log, idx) => (
+                <div key={idx} className={`atp-log-item log-${log.type}`}>
+                  <span className="atp-log-time">[{log.timestamp}]</span>
+                  <span className="atp-log-msg">{log.message}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 

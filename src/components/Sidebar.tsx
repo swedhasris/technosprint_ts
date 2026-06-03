@@ -90,21 +90,23 @@ export function Sidebar() {
       label: "Favorites",
       items: profile?.role === "user"
         ? [
-            { icon: LayoutDashboard, label: "Personal Dashboard", path: "/my-dashboard" },
-            { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
-            { icon: CalendarDays, label: "Calendar", path: "/calendar" },
-            { icon: Ticket, label: "My Tickets", path: "/timesheet" },
-            { icon: BarChart2, label: "Timesheet Reports", path: "/timesheet/reports" },
-            { icon: Monitor, label: "AI Activity Tracker", path: "/activity-tracker" },
-          ]
+          { icon: LayoutDashboard, label: "Personal Dashboard", path: "/my-dashboard" },
+          { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
+          { icon: CalendarDays, label: "Calendar", path: "/calendar" },
+          { icon: Ticket, label: "My Tickets", path: "/timesheet" },
+          { icon: BarChart2, label: "Timesheet Reports", path: "/timesheet/reports" },
+          { icon: Monitor, label: "AI Activity Tracker", path: "/activity-tracker" },
+          { icon: Search, label: "Global Search", path: "/global-search" },
+        ]
         : [
-            { icon: LayoutDashboard, label: "Personal Dashboard", path: "/" },
-            { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
-            { icon: CalendarDays, label: "Calendar", path: "/calendar" },
-            { icon: Ticket, label: "My Tickets", path: "/timesheet" },
-            { icon: BarChart2, label: "Timesheet Reports", path: "/timesheet/reports" },
-            { icon: Monitor, label: "AI Activity Tracker", path: "/activity-tracker" },
-          ]
+          { icon: LayoutDashboard, label: "Personal Dashboard", path: "/" },
+          { icon: Trophy, label: "Leaderboard", path: "/leaderboard" },
+          { icon: CalendarDays, label: "Calendar", path: "/calendar" },
+          { icon: Ticket, label: "My Tickets", path: "/timesheet" },
+          { icon: BarChart2, label: "Timesheet Reports", path: "/timesheet/reports" },
+          { icon: Monitor, label: "AI Activity Tracker", path: "/activity-tracker" },
+          { icon: Search, label: "Global Search", path: "/global-search" },
+        ]
     },
     {
       label: "Email Integration",

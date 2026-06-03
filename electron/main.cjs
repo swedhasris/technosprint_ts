@@ -218,24 +218,18 @@ ipcMain.on('pet-set-ignore-mouse-events', (event, ignore, options) => {
   }
 });
 
+// IPC: transparent overlay stop-tracker button clicked -> forward to main React app window
+ipcMain.on('stop-tracker-click', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('stop-activity-tracker');
+  }
+});
+
 // IPC: move pet to new position relative to main window (deprecated/no-op in global overlay mode)
 ipcMain.on('pet-overlay-move', (event, { x, y }) => {
   // Safe no-op: in global overlay mode, the overlay window covers all displays
   // at the virtual coordinate origin, and the pet moves inside the HTML document.
 });
-
-// Auto-adjust overlay bounds on monitor / resolution / layout changes
-screen.on('display-metrics-changed', () => {
-  if (petOverlayWindow) {
-    try {
-      const bounds = getVirtualScreenBounds();
-      petOverlayWindow.setBounds(bounds);
-    } catch (err) {
-      console.error('[Electron] Failed to update overlay bounds on display changes:', err);
-    }
-  }
-});
-
 
 /* ── IPC: get all screens (for multi-monitor) ── */
 ipcMain.handle('get-screens', async () => {
@@ -266,6 +260,19 @@ app.whenReady().then(async () => {
   } catch (e) {
     console.warn('[Electron] Server wait timed out, opening anyway');
   }
+
+  // Auto-adjust overlay bounds on monitor / resolution / layout changes safely after ready
+  screen.on('display-metrics-changed', () => {
+    if (petOverlayWindow) {
+      try {
+        const bounds = getVirtualScreenBounds();
+        petOverlayWindow.setBounds(bounds);
+      } catch (err) {
+        console.error('[Electron] Failed to update overlay bounds on display changes:', err);
+      }
+    }
+  });
+
   createWindow();
   createPetOverlay();
 

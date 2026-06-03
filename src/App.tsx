@@ -53,6 +53,7 @@ const BrandingSettings = lazy(() => import("./pages/BrandingSettings").then(m =>
 const ActivityTracker = lazy(() => import("./pages/ActivityTracker").then(m => ({ default: m.ActivityTracker })));
 const DataAnalytics = lazy(() => import("./pages/DataAnalytics").then(m => ({ default: m.DataAnalytics })));
 const IncidentCategoryManagement = lazy(() => import("./pages/IncidentCategoryManagement").then(m => ({ default: m.IncidentCategoryManagement })));
+const GlobalSearch = lazy(() => import("./pages/GlobalSearch").then(m => ({ default: m.GlobalSearch })));
 
 function LoadingScreen() {
   return (
@@ -91,11 +92,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   );
 }
 
-  function HomeRedirect() {
-    const { loading } = useAuth();
-    if (loading) return <LoadingScreen />;
-    return <Navigate to="/my-dashboard" />;
-  }
+function HomeRedirect() {
+  const { loading } = useAuth();
+  if (loading) return <LoadingScreen />;
+  return <Navigate to="/my-dashboard" />;
+}
 
 export default function App() {
   return (
@@ -121,286 +122,294 @@ function AppBody() {
           <Router>
             <Suspense fallback={<LoadingScreen />}>
               <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <HomeRedirect />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/my-dashboard"
-            element={
-              <ProtectedRoute>
-                <MyDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/tickets"
-            element={
-              <ProtectedRoute>
-                <Tickets />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/tickets/:id"
-            element={
-              <ProtectedRoute>
-                <TicketDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <GlobalHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sla"
-            element={
-              <ProtectedRoute>
-                <SLAManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/approvals"
-            element={
-              <ProtectedRoute>
-                <Approvals />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <Users />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/incident-categories"
-            element={
-              <ProtectedRoute>
-                <IncidentCategoryManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/timesheet"
-            element={
-              <ProtectedRoute>
-                <Timesheet />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/timesheet/:weekStart"
-            element={
-              <ProtectedRoute>
-                <Timesheet />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/timesheet/weekly"
-            element={
-              <ProtectedRoute>
-                <TimesheetWeekly />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/timesheet/reports"
-            element={
-              <ProtectedRoute>
-                <TimesheetReports />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/catalog"
-            element={
-              <ProtectedRoute>
-                <ServiceCatalog />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cmdb"
-            element={
-              <ProtectedRoute>
-                <CMDB />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/conversations"
-            element={
-              <ProtectedRoute>
-                <Conversations />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/problem"
-            element={
-              <ProtectedRoute>
-                <ProblemManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/change"
-            element={
-              <ProtectedRoute>
-                <ChangeManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/kb"
-            element={
-              <ProtectedRoute>
-                <KnowledgeBase />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <ProtectedRoute>
-                <Calendar />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/access-control"
-            element={
-              <ProtectedRoute>
-                <AccessControl />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/leaderboard"
-            element={
-              <ProtectedRoute>
-                <Leaderboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/approved-tickets"
-            element={
-              <ProtectedRoute>
-                <ApprovedTickets />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/companies"
-            element={
-              <ProtectedRoute>
-                <Companies />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/companies/:id"
-            element={
-              <ProtectedRoute>
-                <Companies />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/timesheet-approvals"
-            element={
-              <ProtectedRoute>
-                <TimesheetApprovals />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/groups"
-            element={
-              <ProtectedRoute>
-                <Groups />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/clear-users"
-            element={
-              <ProtectedRoute>
-                <ClearUsers />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/email-integrations"
-            element={
-              <ProtectedRoute>
-                <EmailIntegrations />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/branding"
-            element={
-              <ProtectedRoute>
-                <BrandingSettings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/activity-tracker"
-            element={
-              <ProtectedRoute>
-                <ActivityTracker />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/data-analytics"
-            element={
-              <ProtectedRoute>
-                <DataAnalytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </Suspense>
-        <TechnosprintPet />
-        <AITrackerPet />
-      </Router>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <HomeRedirect />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/my-dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <MyDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tickets"
+                  element={
+                    <ProtectedRoute>
+                      <Tickets />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tickets/:id"
+                  element={
+                    <ProtectedRoute>
+                      <TicketDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/history"
+                  element={
+                    <ProtectedRoute>
+                      <GlobalHistory />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sla"
+                  element={
+                    <ProtectedRoute>
+                      <SLAManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/approvals"
+                  element={
+                    <ProtectedRoute>
+                      <Approvals />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <ProtectedRoute>
+                      <Users />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/incident-categories"
+                  element={
+                    <ProtectedRoute>
+                      <IncidentCategoryManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/timesheet"
+                  element={
+                    <ProtectedRoute>
+                      <Timesheet />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/timesheet/:weekStart"
+                  element={
+                    <ProtectedRoute>
+                      <Timesheet />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/timesheet/weekly"
+                  element={
+                    <ProtectedRoute>
+                      <TimesheetWeekly />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/timesheet/reports"
+                  element={
+                    <ProtectedRoute>
+                      <TimesheetReports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute>
+                      <Reports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/catalog"
+                  element={
+                    <ProtectedRoute>
+                      <ServiceCatalog />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/cmdb"
+                  element={
+                    <ProtectedRoute>
+                      <CMDB />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/conversations"
+                  element={
+                    <ProtectedRoute>
+                      <Conversations />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/problem"
+                  element={
+                    <ProtectedRoute>
+                      <ProblemManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/change"
+                  element={
+                    <ProtectedRoute>
+                      <ChangeManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/kb"
+                  element={
+                    <ProtectedRoute>
+                      <KnowledgeBase />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/calendar"
+                  element={
+                    <ProtectedRoute>
+                      <Calendar />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/access-control"
+                  element={
+                    <ProtectedRoute>
+                      <AccessControl />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/leaderboard"
+                  element={
+                    <ProtectedRoute>
+                      <Leaderboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/approved-tickets"
+                  element={
+                    <ProtectedRoute>
+                      <ApprovedTickets />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/companies"
+                  element={
+                    <ProtectedRoute>
+                      <Companies />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/companies/:id"
+                  element={
+                    <ProtectedRoute>
+                      <Companies />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/timesheet-approvals"
+                  element={
+                    <ProtectedRoute>
+                      <TimesheetApprovals />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/groups"
+                  element={
+                    <ProtectedRoute>
+                      <Groups />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/clear-users"
+                  element={
+                    <ProtectedRoute>
+                      <ClearUsers />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/email-integrations"
+                  element={
+                    <ProtectedRoute>
+                      <EmailIntegrations />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/branding"
+                  element={
+                    <ProtectedRoute>
+                      <BrandingSettings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/activity-tracker"
+                  element={
+                    <ProtectedRoute>
+                      <ActivityTracker />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/data-analytics"
+                  element={
+                    <ProtectedRoute>
+                      <DataAnalytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/global-search"
+                  element={
+                    <ProtectedRoute>
+                      <GlobalSearch />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </Suspense>
+            <TechnosprintPet />
+            <AITrackerPet />
+          </Router>
         </ActivityTrackerProvider>
       </BrandingProvider>
     </ThemeProvider>

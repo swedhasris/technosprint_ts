@@ -362,6 +362,27 @@ export function TechnosprintPet() {
     };
   }, []);
 
+  // 3e. Secure Browser Extension State Sync Bridge
+  useEffect(() => {
+    if (user?.uid) {
+      window.postMessage({
+        type: "TICKLORA_STATE_UPDATE",
+        state: {
+          role: profile?.role || "user",
+          userName: profile?.name || "Technician",
+          openTickets: counts.open,
+          pendingTickets: counts.pending,
+          assignedTickets: counts.assigned,
+          resolvedTickets: counts.resolved,
+          isTrackerOn: isTrackerOn,
+          aiTask: aiTask,
+          petState: petState,
+          bubbleText: bubbleText
+        }
+      }, "*");
+    }
+  }, [user, profile, counts, isTrackerOn, aiTask, petState, bubbleText]);
+
   // 4. Trigger speech bubble helper
   const triggerBubble = (text: string) => {
     if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);

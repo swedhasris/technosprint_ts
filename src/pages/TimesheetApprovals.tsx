@@ -4,6 +4,7 @@ import { ROLE_HIERARCHY } from "../lib/roles";
 import { ShieldAlert, CheckCircle, XCircle, RotateCcw, Eye, X, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate } from "@/lib/utils";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
   Draft:     "bg-gray-100 text-gray-700",
@@ -25,6 +26,54 @@ export function TimesheetApprovals() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const [startDate, setStartDate] = useState(() => localStorage.getItem("sn-timesheet-approvals-start-date") || "");
+  const [endDate, setEndDate] = useState(() => localStorage.getItem("sn-timesheet-approvals-end-date") || "");
+  const [appliedStartDate, setAppliedStartDate] = useState(() => localStorage.getItem("sn-timesheet-approvals-start-date") || "");
+  const [appliedEndDate, setAppliedEndDate] = useState(() => localStorage.getItem("sn-timesheet-approvals-end-date") || "");
+  const [dateError, setDateError] = useState("");
+
+  const getRecordTime = (val: any): number => {
+    if (!val) return 0;
+    if (typeof val === 'object' && val.seconds !== undefined) {
+      return val.seconds * 1000;
+    }
+    if (typeof val === 'object' && typeof val.toDate === 'function') {
+      return val.toDate().getTime();
+    }
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  };
+
+  const handleApplyFilter = () => {
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      setDateError("End Date cannot be earlier than Start Date");
+      return;
+    }
+    setDateError("");
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+    if (startDate) {
+      localStorage.setItem("sn-timesheet-approvals-start-date", startDate);
+    } else {
+      localStorage.removeItem("sn-timesheet-approvals-start-date");
+    }
+    if (endDate) {
+      localStorage.setItem("sn-timesheet-approvals-end-date", endDate);
+    } else {
+      localStorage.removeItem("sn-timesheet-approvals-end-date");
+    }
+  };
+
+  const handleClearFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setAppliedStartDate("");
+    setAppliedEndDate("");
+    setDateError("");
+    localStorage.removeItem("sn-timesheet-approvals-start-date");
+    localStorage.removeItem("sn-timesheet-approvals-end-date");
+  };
 
   // Only admin (level 4) and above can approve
   const canApprove = ROLE_HIERARCHY[role as any] >= ROLE_HIERARCHY["admin"];
@@ -65,9 +114,22 @@ export function TimesheetApprovals() {
     );
   }
 
-  const filtered = timesheets.filter(ts =>
-    statusFilter === "all" ? true : ts.status === statusFilter
-  );
+  const filtered = timesheets.filter(ts => {
+    const matchStatus = statusFilter === "all" ? true : ts.status === statusFilter;
+    if (!matchStatus) return false;
+
+    const tsTime = getRecordTime(ts.submitted_at || ts.created_at);
+    if (appliedStartDate) {
+      const startMs = new Date(appliedStartDate + "T00:00:00").getTime();
+      if (tsTime < startMs) return false;
+    }
+    if (appliedEndDate) {
+      const endMs = new Date(appliedEndDate + "T23:59:59").getTime();
+      if (tsTime > endMs) return false;
+    }
+
+    return true;
+  });
 
   const counts = {
     Submitted: timesheets.filter(t => t.status === "Submitted").length,
@@ -75,6 +137,19 @@ export function TimesheetApprovals() {
     Rejected:  timesheets.filter(t => t.status === "Rejected").length,
     Draft:     timesheets.filter(t => t.status === "Draft").length,
   };
+
+  const employeeMinutesMap: Record<string, number> = {};
+  filtered.forEach(ts => {
+    const user = users[ts.user_id] || {};
+    const name = user.name || "Unknown";
+    const minutes = parseFloat(ts.total_hours) || 0;
+    employeeMinutesMap[name] = (employeeMinutesMap[name] || 0) + minutes;
+  });
+
+  const employeeData = Object.entries(employeeMinutesMap).map(([name, minutes]) => ({
+    name,
+    minutes,
+  })).sort((a, b) => b.minutes - a.minutes);
 
   const handleApprove = async (tsId: string) => {
     if (!confirm("Approve this timesheet?")) return;
@@ -125,9 +200,7 @@ export function TimesheetApprovals() {
   };
 
   const handleDownloadCSV = () => {
-    const filteredTs = timesheets.filter(ts =>
-      statusFilter === "all" ? true : ts.status === statusFilter
-    );
+    const filteredTs = filtered;
 
     const headers = ["Employee Name", "Employee Email", "Week Start", "Week End", "Total Minutes", "Status", "Submitted At"];
     const rows = filteredTs.map(ts => {
@@ -219,22 +292,59 @@ export function TimesheetApprovals() {
           <h1 className="text-2xl font-bold text-sn-dark">Ticket Approvals</h1>
           <p className="text-sm text-muted-foreground">Review and approve employee tickets</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={handleDownloadCSV}
-            variant="outline"
-            className="flex items-center gap-2 border border-border hover:bg-muted font-medium text-sm rounded p-2"
-          >
-            <Download className="w-4 h-4" /> Download CSV
-          </Button>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="p-2 border border-border rounded text-sm outline-none focus:ring-1 focus:ring-sn-green">
-            <option value="Submitted">Submitted</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Draft">Draft</option>
-            <option value="all">All</option>
-          </select>
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="p-2 border border-border rounded text-sm outline-none focus:ring-1 focus:ring-sn-green bg-background text-foreground"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="p-2 border border-border rounded text-sm outline-none focus:ring-1 focus:ring-sn-green bg-background text-foreground"
+              />
+              <Button
+                onClick={handleApplyFilter}
+                className="bg-sn-green text-sn-dark font-bold text-sm rounded px-3 py-2 hover:opacity-90 transition-opacity"
+              >
+                Apply Filter
+              </Button>
+              {(appliedStartDate || appliedEndDate) && (
+                <button
+                  onClick={handleClearFilter}
+                  className="p-2 border border-border rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title="Clear Filters"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+              className="p-2 border border-border rounded text-sm outline-none focus:ring-1 focus:ring-sn-green bg-background text-foreground">
+              <option value="Submitted">Submitted</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Draft">Draft</option>
+              <option value="all">All</option>
+            </select>
+
+            <Button
+              onClick={handleDownloadCSV}
+              variant="outline"
+              className="flex items-center gap-2 border border-border hover:bg-muted font-medium text-sm rounded p-2 bg-background text-foreground"
+            >
+              <Download className="w-4 h-4" /> Download CSV
+            </Button>
+          </div>
+          {dateError && (
+            <p className="text-red-500 text-xs font-semibold">{dateError}</p>
+          )}
         </div>
       </div>
 
@@ -251,6 +361,28 @@ export function TimesheetApprovals() {
             <div className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</div>
           </div>
         ))}
+      </div>
+
+      {/* Dynamic Employee Hours Bar Chart */}
+      <div className="bg-white border border-border rounded-lg shadow-sm p-5">
+        <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground mb-4">Total Minutes Worked by Employee</h3>
+        <div className="h-48">
+          {employeeData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic">
+              No timesheet data in range
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={employeeData} margin={{ left: 0, right: 20, top: 10, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="name" fontSize={10} />
+                <YAxis fontSize={10} label={{ value: 'Minutes', angle: -90, position: 'insideLeft', offset: 0, style: { fontSize: 10 } }} />
+                <Tooltip formatter={(v: any) => [`${v} mins`, "Total Time"]} contentStyle={{ fontSize: 10, borderRadius: 8, border: 'none' }} />
+                <Bar dataKey="minutes" fill="#00e676" radius={[4, 4, 0, 0]} barSize={30} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
       {/* Table */}

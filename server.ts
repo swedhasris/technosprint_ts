@@ -8,15 +8,34 @@ import { GoogleGenAI } from "@google/genai";
 import { config as loadEnv } from "dotenv";
 import multer from "multer";
 import fs from "fs";
+import nodemailer from "nodemailer";
+import imaps from "imap-simple";
 import { OmniChannelEngine } from "./src/lib/omniChannelEngine";
 import { SLAEngine } from "./src/lib/slaEngine";
 import { uIOhook } from "uiohook-napi";
 import { setUseSQLite } from "./src/lib/db";
+import { initializeApp as initFirebaseApp } from "firebase/app";
+import { initializeFirestore as initFirestore, collection as fsCollection, getDocs as fsGetDocs, doc as fsDoc, updateDoc as fsUpdateDoc, addDoc as fsAddDoc, query as fsQuery, where as fsWhere } from "firebase/firestore";
 
 // SQLite will be imported dynamically when needed
 
 // Load environment variables from .env file
 loadEnv();
+
+let firestoreDb: any = null;
+try {
+  const firebaseConfigPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(firebaseConfigPath)) {
+    const firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, "utf8"));
+    if (firebaseConfig.projectId && firebaseConfig.authDomain) {
+      const firebaseApp = initFirebaseApp(firebaseConfig);
+      firestoreDb = initFirestore(firebaseApp, {}, firebaseConfig.firestoreDatabaseId);
+      console.log("[Firebase Backend] Firestore initialized successfully");
+    }
+  }
+} catch (err: any) {
+  console.error("[Firebase Backend] Failed to initialize Firestore:", err.message);
+}
 
 // Log API key status at startup (masked for security)
 const geminiKey = process.env.GEMINI_API_KEY;
@@ -220,33 +239,48 @@ async function getSQLiteDb() {
         value_text TEXT NOT NULL,
         FOREIGN KEY (category_id) REFERENCES incident_categories(id) ON DELETE CASCADE
       );
+      CREATE TABLE IF NOT EXISTS sla_breaches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id TEXT NOT NULL,
+        record_type TEXT NOT NULL,
+        assigned_user TEXT NOT NULL,
+        assigned_user_name TEXT,
+        sla_name TEXT NOT NULL,
+        sla_target TEXT,
+        actual_time_taken TEXT,
+        breach_duration TEXT,
+        breach_timeslot TEXT,
+        breach_timestamp TEXT,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `);
     // Migrate: add screenshot_url column if missing (safe to re-run)
-    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN screenshot_url TEXT;"); } catch (e) {}
-    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_by TEXT;"); } catch (e) {}
-    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_at DATETIME;"); } catch (e) {}
-    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN rejection_reason TEXT;"); } catch (e) {}
-    try { await sqliteDb.exec("ALTER TABLE time_cards ADD COLUMN notes TEXT;"); } catch (e) {}
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN screenshot_url TEXT;"); } catch (e) { }
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_by TEXT;"); } catch (e) { }
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN approved_at DATETIME;"); } catch (e) { }
+    try { await sqliteDb.exec("ALTER TABLE timesheets ADD COLUMN rejection_reason TEXT;"); } catch (e) { }
+    try { await sqliteDb.exec("ALTER TABLE time_cards ADD COLUMN notes TEXT;"); } catch (e) { }
     try {
       await sqliteDb.exec("ALTER TABLE tickets ADD COLUMN response_sla_start_time DATETIME");
-    } catch (e) {}
+    } catch (e) { }
     try {
       await sqliteDb.exec("ALTER TABLE tickets ADD COLUMN resolution_sla_start_time DATETIME");
-    } catch (e) {}
+    } catch (e) { }
     try {
       await sqliteDb.exec("ALTER TABLE users ADD COLUMN last_login DATETIME");
-    } catch (e) {}
+    } catch (e) { }
     try {
       await sqliteDb.exec("ALTER TABLE tickets ADD COLUMN incident_category TEXT");
-    } catch (e) {}
+    } catch (e) { }
     // Ensure tables have latest columns
     try {
       await sqliteDb.exec("ALTER TABLE activity_entries ADD COLUMN keystrokes INTEGER DEFAULT 0");
-    } catch (e) {}
+    } catch (e) { }
     try {
       await sqliteDb.exec("ALTER TABLE activity_entries ADD COLUMN clicks INTEGER DEFAULT 0");
-    } catch (e) {}
-    
+    } catch (e) { }
+
     try {
       await sqliteDb.exec(`
         CREATE TABLE IF NOT EXISTS notifications (
@@ -265,7 +299,7 @@ async function getSQLiteDb() {
     } catch (e: any) {
       console.error('[SQLite] Failed to initialize notifications table:', e.message);
     }
-    
+
     console.log('[SQLite] Timesheet database initialized');
   }
   return sqliteDb;
@@ -345,6 +379,304 @@ async function generateTicketNumber(): Promise<string> {
   const prefix = 'INC';
   const random = Math.floor(1000000 + Math.random() * 9000000);
   return `${prefix}${random}`;
+}
+
+function getBreachTimeslot(durationMs: number): string {
+  const hours = durationMs / (1000 * 60 * 60);
+  if (hours <= 1) return "0–1 Hour";
+  if (hours <= 2) return "1–2 Hours";
+  if (hours <= 3) return "2–3 Hours";
+  if (hours <= 4) return "3–4 Hours";
+  if (hours <= 6) return "4–6 Hours";
+  if (hours <= 12) return "6–12 Hours";
+  if (hours <= 24) return "12–24 Hours";
+  return "24+ Hours";
+}
+
+function formatBreachDuration(durationMs: number): string {
+  const seconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days}d ${hours % 24}h`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m`;
+  }
+  return `${seconds}s`;
+}
+
+async function recordBreach(breach: {
+  record_id: string;
+  record_type: string;
+  assigned_user: string;
+  assigned_user_name: string;
+  sla_name: string;
+  sla_target: string;
+  actual_time_taken: string;
+  breach_duration: string;
+  breach_timeslot: string;
+  breach_timestamp: string;
+  status?: string;
+}) {
+  try {
+    const status = breach.status || 'active';
+    const existing = await query(
+      "SELECT id FROM sla_breaches WHERE record_id = ? AND sla_name = ?",
+      [breach.record_id, breach.sla_name]
+    );
+
+    if (existing.length === 0) {
+      await execute(`
+        INSERT INTO sla_breaches (record_id, record_type, assigned_user, assigned_user_name, sla_name, sla_target, actual_time_taken, breach_duration, breach_timeslot, breach_timestamp, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [breach.record_id, breach.record_type, breach.assigned_user, breach.assigned_user_name, breach.sla_name, breach.sla_target, breach.actual_time_taken, breach.breach_duration, breach.breach_timeslot, breach.breach_timestamp, status]);
+      console.log(`[SQL Breach Log] Logged new breach for ticket ${breach.record_id} (${breach.sla_name})`);
+    } else {
+      await execute(`
+        UPDATE sla_breaches 
+        SET actual_time_taken = ?, breach_duration = ?, breach_timeslot = ?, status = ?
+        WHERE record_id = ? AND sla_name = ?
+      `, [breach.actual_time_taken, breach.breach_duration, breach.breach_timeslot, status, breach.record_id, breach.sla_name]);
+    }
+
+    if (firestoreDb) {
+      const breachesCollection = fsCollection(firestoreDb, "sla_breaches");
+      const fsQ = fsQuery(
+        breachesCollection,
+        fsWhere("record_id", "==", breach.record_id),
+        fsWhere("sla_name", "==", breach.sla_name)
+      );
+      const snap = await fsGetDocs(fsQ);
+
+      if (snap.empty) {
+        await fsAddDoc(breachesCollection, {
+          record_id: breach.record_id,
+          record_type: breach.record_type,
+          assigned_user: breach.assigned_user,
+          assigned_user_name: breach.assigned_user_name,
+          sla_name: breach.sla_name,
+          sla_target: breach.sla_target,
+          actual_time_taken: breach.actual_time_taken,
+          breach_duration: breach.breach_duration,
+          breach_timeslot: breach.breach_timeslot,
+          breach_timestamp: breach.breach_timestamp,
+          status: status,
+          created_at: new Date().toISOString()
+        });
+        console.log(`[Firestore Breach Log] Logged new breach for ticket ${breach.record_id} (${breach.sla_name})`);
+      } else {
+        const docId = snap.docs[0].id;
+        await fsUpdateDoc(fsDoc(firestoreDb, "sla_breaches", docId), {
+          actual_time_taken: breach.actual_time_taken,
+          breach_duration: breach.breach_duration,
+          breach_timeslot: breach.breach_timeslot,
+          status: status,
+          updated_at: new Date().toISOString()
+        });
+      }
+    }
+  } catch (err: any) {
+    console.error("[Breach Recorder] Error recording breach:", err.message);
+  }
+}
+
+async function checkFirestoreSLABreaches() {
+  if (!firestoreDb) return;
+  const now = new Date();
+  const nowStr = now.toISOString();
+
+  try {
+    const ticketsQuery = fsQuery(
+      fsCollection(firestoreDb, "tickets"),
+      fsWhere("status", "not-in", ["Resolved", "Closed", "Canceled"])
+    );
+    const snapshot = await fsGetDocs(ticketsQuery);
+    
+    for (const docSnap of snapshot.docs) {
+      const ticket = docSnap.data();
+      const ticketId = docSnap.id;
+      
+      if (ticket.responseDeadline && !ticket.firstResponseAt && ticket.responseSlaStatus !== "Breached" && ticket.responseSlaStatus !== "Completed") {
+        const deadlineMs = new Date(ticket.responseDeadline).getTime();
+        const totalPaused = ticket.totalPausedTime || 0;
+        const nowMs = now.getTime();
+        
+        if (nowMs > (deadlineMs + totalPaused)) {
+          console.log(`[SLA Monitor] Ticket ${ticket.number || ticketId} Response SLA breached!`);
+          
+          const breachDurationMs = nowMs - (deadlineMs + totalPaused);
+          const breachDuration = formatBreachDuration(breachDurationMs);
+          const breachTimeslot = getBreachTimeslot(breachDurationMs);
+          const startMs = new Date(ticket.responseSlaStartTime || ticket.createdAt).getTime();
+          const actualTimeMs = nowMs - startMs;
+          
+          await fsUpdateDoc(fsDoc(firestoreDb, "tickets", ticketId), {
+            responseSlaStatus: "Breached",
+            updatedAt: nowStr
+          });
+          
+          await recordBreach({
+            record_id: ticketId,
+            record_type: "Ticket",
+            assigned_user: ticket.assignedTo || "unassigned",
+            assigned_user_name: ticket.assignedToName || "Unassigned",
+            sla_name: "Response SLA",
+            sla_target: ticket.responseDeadline,
+            actual_time_taken: formatBreachDuration(actualTimeMs),
+            breach_duration: breachDuration,
+            breach_timeslot: breachTimeslot,
+            breach_timestamp: ticket.responseDeadline,
+            status: "active"
+          });
+        }
+      }
+      
+      if (ticket.resolutionDeadline && ticket.firstResponseAt && !ticket.resolvedAt && ticket.resolutionSlaStatus !== "Breached" && ticket.resolutionSlaStatus !== "Completed") {
+        const deadlineMs = new Date(ticket.resolutionDeadline).getTime();
+        const totalPaused = ticket.totalPausedTime || 0;
+        const nowMs = now.getTime();
+        
+        if (nowMs > (deadlineMs + totalPaused)) {
+          console.log(`[SLA Monitor] Ticket ${ticket.number || ticketId} Resolution SLA breached!`);
+          
+          const breachDurationMs = nowMs - (deadlineMs + totalPaused);
+          const breachDuration = formatBreachDuration(breachDurationMs);
+          const breachTimeslot = getBreachTimeslot(breachDurationMs);
+          const startMs = new Date(ticket.resolutionSlaStartTime || ticket.firstResponseAt).getTime();
+          const actualTimeMs = nowMs - startMs;
+          
+          await fsUpdateDoc(fsDoc(firestoreDb, "tickets", ticketId), {
+            resolutionSlaStatus: "Breached",
+            updatedAt: nowStr
+          });
+          
+          await recordBreach({
+            record_id: ticketId,
+            record_type: "Ticket",
+            assigned_user: ticket.assignedTo || "unassigned",
+            assigned_user_name: ticket.assignedToName || "Unassigned",
+            sla_name: "Resolution SLA",
+            sla_target: ticket.resolutionDeadline,
+            actual_time_taken: formatBreachDuration(actualTimeMs),
+            breach_duration: breachDuration,
+            breach_timeslot: breachTimeslot,
+            breach_timestamp: ticket.resolutionDeadline,
+            status: "active"
+          });
+        }
+      }
+      
+      if (ticket.responseSlaStatus === "Breached" && !ticket.firstResponseAt) {
+        const deadlineMs = new Date(ticket.responseDeadline).getTime();
+        const totalPaused = ticket.totalPausedTime || 0;
+        const nowMs = now.getTime();
+        const breachDurationMs = nowMs - (deadlineMs + totalPaused);
+        const startMs = new Date(ticket.responseSlaStartTime || ticket.createdAt).getTime();
+        
+        await recordBreach({
+          record_id: ticketId,
+          record_type: "Ticket",
+          assigned_user: ticket.assignedTo || "unassigned",
+          assigned_user_name: ticket.assignedToName || "Unassigned",
+          sla_name: "Response SLA",
+          sla_target: ticket.responseDeadline,
+          actual_time_taken: formatBreachDuration(nowMs - startMs),
+          breach_duration: formatBreachDuration(breachDurationMs),
+          breach_timeslot: getBreachTimeslot(breachDurationMs),
+          breach_timestamp: ticket.responseDeadline,
+          status: "active"
+        });
+      }
+      
+      if (ticket.resolutionSlaStatus === "Breached" && ticket.firstResponseAt && !ticket.resolvedAt) {
+        const deadlineMs = new Date(ticket.resolutionDeadline).getTime();
+        const totalPaused = ticket.totalPausedTime || 0;
+        const nowMs = now.getTime();
+        const breachDurationMs = nowMs - (deadlineMs + totalPaused);
+        const startMs = new Date(ticket.resolutionSlaStartTime || ticket.firstResponseAt).getTime();
+        
+        await recordBreach({
+          record_id: ticketId,
+          record_type: "Ticket",
+          assigned_user: ticket.assignedTo || "unassigned",
+          assigned_user_name: ticket.assignedToName || "Unassigned",
+          sla_name: "Resolution SLA",
+          sla_target: ticket.resolutionDeadline,
+          actual_time_taken: formatBreachDuration(nowMs - startMs),
+          breach_duration: formatBreachDuration(breachDurationMs),
+          breach_timeslot: getBreachTimeslot(breachDurationMs),
+          breach_timestamp: ticket.resolutionDeadline,
+          status: "active"
+        });
+      }
+    }
+    
+    const resolvedTicketsQuery = fsQuery(
+      fsCollection(firestoreDb, "tickets"),
+      fsWhere("status", "in", ["Resolved", "Closed"])
+    );
+    const resolvedSnapshot = await fsGetDocs(resolvedTicketsQuery);
+    for (const docSnap of resolvedSnapshot.docs) {
+      const ticket = docSnap.data();
+      const ticketId = docSnap.id;
+      
+      if (ticket.responseSlaStatus === "Breached" && ticket.firstResponseAt) {
+        const deadlineMs = new Date(ticket.responseDeadline).getTime();
+        const totalPaused = ticket.totalPausedTime || 0;
+        const firstResponseMs = new Date(ticket.firstResponseAt).getTime();
+        const startMs = new Date(ticket.responseSlaStartTime || ticket.createdAt).getTime();
+        
+        const finalBreachMs = firstResponseMs - (deadlineMs + totalPaused);
+        if (finalBreachMs > 0) {
+          await recordBreach({
+            record_id: ticketId,
+            record_type: "Ticket",
+            assigned_user: ticket.assignedTo || "unassigned",
+            assigned_user_name: ticket.assignedToName || "Unassigned",
+            sla_name: "Response SLA",
+            sla_target: ticket.responseDeadline,
+            actual_time_taken: formatBreachDuration(firstResponseMs - startMs),
+            breach_duration: formatBreachDuration(finalBreachMs),
+            breach_timeslot: getBreachTimeslot(finalBreachMs),
+            breach_timestamp: ticket.responseDeadline,
+            status: "finalized"
+          });
+        }
+      }
+      
+      if (ticket.resolutionSlaStatus === "Breached" && ticket.resolvedAt) {
+        const deadlineMs = new Date(ticket.resolutionDeadline).getTime();
+        const totalPaused = ticket.totalPausedTime || 0;
+        const resolvedMs = new Date(ticket.resolvedAt).getTime();
+        const startMs = new Date(ticket.resolutionSlaStartTime || ticket.firstResponseAt).getTime();
+        
+        const finalBreachMs = resolvedMs - (deadlineMs + totalPaused);
+        if (finalBreachMs > 0) {
+          await recordBreach({
+            record_id: ticketId,
+            record_type: "Ticket",
+            assigned_user: ticket.assignedTo || "unassigned",
+            assigned_user_name: ticket.assignedToName || "Unassigned",
+            sla_name: "Resolution SLA",
+            sla_target: ticket.resolutionDeadline,
+            actual_time_taken: formatBreachDuration(resolvedMs - startMs),
+            breach_duration: formatBreachDuration(finalBreachMs),
+            breach_timeslot: getBreachTimeslot(finalBreachMs),
+            breach_timestamp: ticket.resolutionDeadline,
+            status: "finalized"
+          });
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error("[SLA Monitor] Error running Firestore SLA check:", err.message);
+  }
 }
 
 // SLA Escalation Engine
@@ -480,10 +812,10 @@ async function startServer() {
           INDEX idx_status (status)
         ) ENGINE=InnoDB
       `);
-      try { await execute("ALTER TABLE timesheets ADD COLUMN screenshot_url LONGTEXT;"); } catch(e) {}
-      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_by VARCHAR(128);"); } catch(e) {}
-      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_at TIMESTAMP NULL;"); } catch(e) {}
-      try { await execute("ALTER TABLE timesheets ADD COLUMN rejection_reason LONGTEXT;"); } catch(e) {}
+      try { await execute("ALTER TABLE timesheets ADD COLUMN screenshot_url LONGTEXT;"); } catch (e) { }
+      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_by VARCHAR(128);"); } catch (e) { }
+      try { await execute("ALTER TABLE timesheets ADD COLUMN approved_at TIMESTAMP NULL;"); } catch (e) { }
+      try { await execute("ALTER TABLE timesheets ADD COLUMN rejection_reason LONGTEXT;"); } catch (e) { }
 
       await execute(`
         CREATE TABLE IF NOT EXISTS ticket_activities (
@@ -530,14 +862,14 @@ async function startServer() {
       try {
         await execute("ALTER TABLE time_cards ADD COLUMN notes TEXT");
         console.log('[MySQL] Added notes column to time_cards table');
-      } catch (e) {}
+      } catch (e) { }
 
       // â•â•â• MASTER DATA TABLES â•â•â•
-      
+
       // Standalone tables
       const standaloneTables = [
-        'mst_groups', 'mst_statuses', 'mst_roles', 'mst_departments', 
-        'mst_ticket_types', 'mst_projects', 'mst_priorities', 
+        'mst_groups', 'mst_statuses', 'mst_roles', 'mst_departments',
+        'mst_ticket_types', 'mst_projects', 'mst_priorities',
         'mst_sources', 'mst_tags', 'mst_categories'
       ];
 
@@ -568,7 +900,7 @@ async function startServer() {
           created_by VARCHAR(128),
           UNIQUE(name)
         ) ENGINE=InnoDB
-      `).catch(() => {});
+      `).catch(() => { });
 
       // Hierarchical tables
       await execute(`
@@ -651,7 +983,7 @@ async function startServer() {
           INDEX idx_captured (captured_at)
         ) ENGINE=InnoDB
       `);
-      
+
       await execute(`
         CREATE TABLE IF NOT EXISTS notifications (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -680,8 +1012,8 @@ async function startServer() {
           INDEX idx_name (name),
           INDEX idx_status (status)
         ) ENGINE=InnoDB;
-      `).catch(() => {});
-      
+      `).catch(() => { });
+
       await execute(`
         CREATE TABLE IF NOT EXISTS incident_category_options (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -696,7 +1028,7 @@ async function startServer() {
           INDEX idx_category (category_id),
           INDEX idx_status (status)
         ) ENGINE=InnoDB;
-      `).catch(() => {});
+      `).catch(() => { });
 
       await execute(`
         CREATE TABLE IF NOT EXISTS ticket_custom_fields (
@@ -708,7 +1040,27 @@ async function startServer() {
           FOREIGN KEY (category_id) REFERENCES incident_categories(id) ON DELETE CASCADE,
           INDEX idx_ticket_id (ticket_id)
         ) ENGINE=InnoDB;
-      `).catch(() => {});
+      `).catch(() => { });
+
+      await execute(`
+        CREATE TABLE IF NOT EXISTS sla_breaches (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          record_id VARCHAR(128) NOT NULL,
+          record_type VARCHAR(50) NOT NULL,
+          assigned_user VARCHAR(128) NOT NULL,
+          assigned_user_name VARCHAR(255),
+          sla_name VARCHAR(255) NOT NULL,
+          sla_target VARCHAR(100),
+          actual_time_taken VARCHAR(100),
+          breach_duration VARCHAR(100),
+          breach_timeslot VARCHAR(50),
+          breach_timestamp VARCHAR(100),
+          status VARCHAR(50) DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_record (record_id, sla_name),
+          INDEX idx_assigned_user (assigned_user)
+        ) ENGINE=InnoDB;
+      `).catch(() => { });
 
       console.log('[MySQL] Notifications table initialized');
       console.log('[MySQL] Activity tracker tables initialized');
@@ -735,7 +1087,7 @@ async function startServer() {
     try {
       // 1. Fetch all users from database to check their roles
       const allUsers = await query("SELECT uid, name, role FROM users");
-      
+
       // 2. Identify roles of ticket creator and assignee
       const creatorUser = allUsers.find(u => u.uid === ticket.created_by);
       const assigneeUser = allUsers.find(u => u.uid === ticket.assigned_to);
@@ -860,7 +1212,7 @@ async function startServer() {
         message = `${creatorName} created a ticket and assigned it to ${assigneeName}`;
       } else {
         message = `${actorName} updated ticket #${ticket.ticket_number}`;
-        
+
         if (newStatus && oldStatus && newStatus !== oldStatus) {
           if (newStatus === "Resolved" || newStatus === "Closed") {
             message = `${actorName} resolved ticket #${ticket.ticket_number}`;
@@ -882,6 +1234,26 @@ async function startServer() {
     }
   });
 
+  // SLA Breaches REST Endpoints
+  app.get("/api/sla-breaches/all", async (req, res) => {
+    try {
+      const rows = await query("SELECT * FROM sla_breaches ORDER BY created_at DESC");
+      res.json(rows.map(r => ({ id: r.id.toString(), ...r })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/sla-breaches/user/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const rows = await query("SELECT * FROM sla_breaches WHERE assigned_user = ? ORDER BY created_at DESC", [userId]);
+      res.json(rows.map(r => ({ id: r.id.toString(), ...r })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", database: "mysql" });
   });
@@ -890,10 +1262,10 @@ async function startServer() {
     try {
       const email = req.query.email as string || process.env.SMTP_USER;
       if (!email) return res.status(400).json({ error: "No email provided" });
-      
+
       await OmniChannelEngine.sendEmail(
-        email, 
-        "Ticklora Test Email", 
+        email,
+        "Ticklora Test Email",
         "<h1>It works!</h1><p>The email system is now functional.</p>"
       );
       res.json({ message: `Test email sent to ${email}` });
@@ -923,22 +1295,22 @@ async function startServer() {
   });
 
   // â•â•â• Incident Category Management Endpoints â•â•â•
-  
+
   // Helper to check admin permission
   async function checkAdminAccess(req: any, res: any): Promise<boolean> {
     const uid = req.query.uid || req.body.uid || req.headers["x-user-uid"];
     const email = req.query.email || req.body.email || req.headers["x-user-email"];
-    
+
     const fallbackEmails = ["arun@technosprint.net", "ulter@technosprint.net", "admin@technosprint.net"];
     if (email && fallbackEmails.includes(email.toLowerCase())) {
       return true;
     }
-    
+
     if (!uid) {
       res.status(401).json({ error: "Unauthorized: Missing user credentials" });
       return false;
     }
-    
+
     try {
       const users = await query("SELECT role, email FROM users WHERE uid = ?", [uid]);
       if (users.length > 0) {
@@ -950,7 +1322,7 @@ async function startServer() {
     } catch (err) {
       console.error("Error checking admin access:", err);
     }
-    
+
     res.status(403).json({ error: "Access denied: Unauthorized role" });
     return false;
   }
@@ -959,22 +1331,22 @@ async function startServer() {
   app.get("/api/incident-categories", async (req, res) => {
     try {
       const activeOnly = req.query.active_only === "true";
-      
+
       // If NOT active_only, enforce admin restrictions
       if (!activeOnly) {
         const authorized = await checkAdminAccess(req, res);
         if (!authorized) return;
       }
-      
+
       let sql = "SELECT * FROM incident_categories";
       const params: any[] = [];
-      
+
       if (activeOnly) {
         sql += " WHERE status = 'Active'";
       }
-      
+
       sql += " ORDER BY name ASC";
-      
+
       const categories = await query(sql, params);
       res.json(categories.map(c => ({ id: c.id.toString(), ...c })));
     } catch (error: any) {
@@ -988,26 +1360,26 @@ async function startServer() {
     try {
       const authorized = await checkAdminAccess(req, res);
       if (!authorized) return;
-      
+
       let { name, description, status, created_by } = req.body;
       if (!name || !name.trim()) {
         return res.status(400).json({ error: "Category name is required" });
       }
-      
+
       name = name.trim();
       status = status || "Active";
-      
+
       // Check for duplicate category name (case-insensitive)
       const existing = await query("SELECT * FROM incident_categories WHERE LOWER(name) = ?", [name.toLowerCase()]);
       if (existing.length > 0) {
         return res.status(400).json({ error: "This category already exists" });
       }
-      
+
       const result = await execute(
         "INSERT INTO incident_categories (name, description, status, created_by, last_updated_by) VALUES (?, ?, ?, ?, ?)",
         [name, description || "", status, created_by || "Admin", created_by || "Admin"]
       );
-      
+
       res.json({
         id: result.insertId.toString(),
         name,
@@ -1027,28 +1399,28 @@ async function startServer() {
     try {
       const authorized = await checkAdminAccess(req, res);
       if (!authorized) return;
-      
+
       const { id } = req.params;
       let { name, description, status, last_updated_by } = req.body;
       if (!name || !name.trim()) {
         return res.status(400).json({ error: "Category name is required" });
       }
-      
+
       name = name.trim();
       status = status || "Active";
-      
+
       // Check duplicate name on OTHER categories
       const existing = await query("SELECT * FROM incident_categories WHERE LOWER(name) = ? AND id != ?", [name.toLowerCase(), id]);
       if (existing.length > 0) {
         return res.status(400).json({ error: "This category already exists" });
       }
-      
+
       // Perform database update
       await execute(
         "UPDATE incident_categories SET name = ?, description = ?, status = ?, last_updated_by = ?, last_updated_date = CURRENT_TIMESTAMP WHERE id = ?",
         [name, description || "", status, last_updated_by || "Admin", id]
       );
-      
+
       res.json({
         id,
         name,
@@ -1068,30 +1440,30 @@ async function startServer() {
     try {
       const authorized = await checkAdminAccess(req, res);
       if (!authorized) return;
-      
+
       const { id } = req.params;
-      
+
       // Get category name
       const categories = await query("SELECT name FROM incident_categories WHERE id = ?", [id]);
       if (categories.length === 0) {
         return res.status(404).json({ error: "Category not found" });
       }
-      
+
       const categoryName = categories[0].name;
-      
+
       // Integrity check: make sure it is not linked to any ACTIVE tickets
       const activeTickets = await query(
         "SELECT COUNT(*) as count FROM tickets WHERE (incident_category = ? OR category = ?) AND status NOT IN ('Resolved', 'Closed', 'Canceled')",
         [categoryName, categoryName]
       );
-      
+
       if (activeTickets[0]?.count > 0) {
         return res.status(400).json({ error: "This category is currently used by existing tickets" });
       }
-      
+
       // Proceed to delete
       await execute("DELETE FROM incident_categories WHERE id = ?", [id]);
-      
+
       res.json({ success: true, message: "Incident category deleted successfully" });
     } catch (error: any) {
       console.error("Error deleting incident category:", error);
@@ -1158,11 +1530,11 @@ async function startServer() {
       );
 
       res.json({
-         id: result.insertId.toString(),
-         category_id,
-         value_text,
-         status,
-         message: "Value added successfully"
+        id: result.insertId.toString(),
+        category_id,
+        value_text,
+        status,
+        message: "Value added successfully"
       });
     } catch (error: any) {
       console.error("Error creating option:", error);
@@ -1273,16 +1645,16 @@ async function startServer() {
       // 2. Compute Cards metrics
       const assigned = userTickets.filter(t => t.assigned_to === uid);
       const created = userTickets.filter(t => t.created_by === uid);
-      
+
       const open = userTickets.filter(t => t.status === "New" || t.status === "Open").length;
       const inProgress = userTickets.filter(t => t.status === "In Progress").length;
       const resolved = userTickets.filter(t => t.status === "Resolved").length;
       const closed = userTickets.filter(t => t.status === "Closed").length;
       const pending = userTickets.filter(t => t.status === "Pending" || t.status === "On Hold").length;
-      
+
       // Let's mark Critical priority tickets or those with breached SLAs as overdue
-      const overdue = userTickets.filter(t => 
-        t.status !== "Resolved" && t.status !== "Closed" && 
+      const overdue = userTickets.filter(t =>
+        t.status !== "Resolved" && t.status !== "Closed" &&
         (t.priority === "1 - Critical" || t.resolution_sla_status === "Breached")
       ).length;
 
@@ -1290,7 +1662,7 @@ async function startServer() {
       const totalTickets = userTickets.length;
       const completedTickets = resolved + closed;
       const completionPercentage = totalTickets > 0 ? `${Math.round((completedTickets / totalTickets) * 100)}%` : "0%";
-      
+
       // Calculate average resolution time (in hours)
       let totalResolutionTimeHours = 0;
       let resolvedCount = 0;
@@ -1303,14 +1675,14 @@ async function startServer() {
           }
         }
       });
-      const avgResolutionTime = resolvedCount > 0 
-        ? `${(totalResolutionTimeHours / resolvedCount).toFixed(1)}h` 
+      const avgResolutionTime = resolvedCount > 0
+        ? `${(totalResolutionTimeHours / resolvedCount).toFixed(1)}h`
         : "N/A";
 
       // Tickets completed today
       const todayStart = new Date();
-      todayStart.setHours(0,0,0,0);
-      const ticketsToday = userTickets.filter(t => 
+      todayStart.setHours(0, 0, 0, 0);
+      const ticketsToday = userTickets.filter(t =>
         t.resolved_at && new Date(t.resolved_at).getTime() >= todayStart.getTime()
       ).length;
 
@@ -1324,8 +1696,8 @@ async function startServer() {
       const monthly = userTickets.filter(t => new Date(t.created_at).getTime() >= oneMonthAgo.getTime()).length.toString();
 
       // Productivity Score based on resolution rate
-      const productivityScore = totalTickets > 0 
-        ? Math.min(100, Math.round((completedTickets / totalTickets) * 80 + 20)) 
+      const productivityScore = totalTickets > 0
+        ? Math.min(100, Math.round((completedTickets / totalTickets) * 80 + 20))
         : 100;
 
       // 4. Status Distribution
@@ -1792,7 +2164,7 @@ async function startServer() {
       // Return updated ticket
       const updatedTickets = await query("SELECT * FROM tickets WHERE id = ?", [id]);
       const updatedTicket = updatedTickets[0];
-      
+
       if (updatedTicket) {
         const actorId = req.body.updatedById || "System";
         const actorName = req.body.updatedBy || "System";
@@ -1807,7 +2179,7 @@ async function startServer() {
             dispatchNotifications(updatedTicket, actorId, actorName, notifMsg);
           }
         }
-        
+
         // 2. Check assignment change
         if (req.body.assignedTo !== undefined && req.body.assignedTo !== ticket.assigned_to) {
           const creatorName = ticket.created_by_name || "System";
@@ -1966,10 +2338,10 @@ async function startServer() {
 
       const user = users[0];
       const calculatedHash = simpleHash(password);
-      
+
       const isUltraAdmin = normalizedEmail === "arun@technosprint.net";
-      const isValidPassword = 
-        (user.password_hash && user.password_hash === calculatedHash) || 
+      const isValidPassword =
+        (user.password_hash && user.password_hash === calculatedHash) ||
         (isUltraAdmin && (password === "Poland@01" || password === "Password123!"));
 
       if (!isValidPassword) {
@@ -2094,6 +2466,392 @@ async function startServer() {
     }
   });
 
+  // Enterprise Global Search Endpoint
+  app.post("/api/global-search", async (req, res) => {
+    try {
+      const { query: searchQuery, role = "user", userId, modules, filters } = req.body;
+      const queryStr = (searchQuery || "").trim();
+      const keywords = queryStr.toLowerCase().split(/\s+/).filter(Boolean);
+
+      // 1. Fetch user details for RBAC
+      let userDetails: any = null;
+      if (userId) {
+        try {
+          const users = await query("SELECT * FROM users WHERE uid = ?", [userId]);
+          if (users.length > 0) {
+            userDetails = users[0];
+          }
+        } catch (err) {
+          console.error("Error fetching user details for RBAC:", err);
+        }
+      }
+
+      // Resolve roles
+      const isAgentOrAdmin = ["agent", "admin", "super_admin", "ultra_super_admin"].includes(role);
+
+      // Initialize result arrays
+      let incidents: any[] = [];
+      let serviceRequests: any[] = [];
+      let problems: any[] = [];
+      let changes: any[] = [];
+      let kbArticles: any[] = [];
+      let usersList: any[] = [];
+      let assetsList: any[] = [];
+      let tasksList: any[] = [];
+
+      // Determine which modules to search
+      const searchAll = !modules || modules.length === 0;
+      const shouldSearch = (moduleName: string) => searchAll || modules.includes(moduleName);
+
+      // --- 1. SEARCH TICKETS (Incidents, Service Requests, Tasks) ---
+      if (shouldSearch("tickets") || shouldSearch("incidents") || shouldSearch("service_requests") || shouldSearch("tasks")) {
+        let allTickets: any[] = [];
+        if (firestoreDb) {
+          try {
+            const ticketsSnap = await fsGetDocs(fsCollection(firestoreDb, "tickets"));
+            allTickets = ticketsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch (e) {
+            console.error("Error fetching tickets from Firestore:", e);
+          }
+        }
+        
+        // Fallback or complement with SQL tickets
+        if (allTickets.length === 0) {
+          try {
+            const rows = await query("SELECT * FROM tickets");
+            allTickets = rows.map(r => ({ id: r.id.toString(), ...r }));
+          } catch (e) {
+            console.error("Error fetching tickets from SQL:", e);
+          }
+        }
+
+        // Apply RBAC to Tickets
+        if (!isAgentOrAdmin && userId) {
+          allTickets = allTickets.filter(t => {
+            const isCaller = userDetails && (
+              (t.caller && t.caller.toLowerCase() === userDetails.name?.toLowerCase()) ||
+              (t.caller && t.caller.toLowerCase() === userDetails.email?.toLowerCase()) ||
+              (t.caller === userId)
+            );
+            const isCreator = t.created_by === userId || (userDetails && t.created_by === userDetails.email);
+            const isAssignee = t.assigned_to === userId || (userDetails && t.assigned_to === userDetails.email);
+            return isCaller || isCreator || isAssignee;
+          });
+        }
+
+        // Filter tickets by query/keywords & comments
+        let matchingTickets = allTickets;
+        if (keywords.length > 0) {
+          // Get ticket IDs from activities/comments matching keywords
+          let commentTicketIds: string[] = [];
+          try {
+            let combinedTicketIds: string[] = [];
+            for (let i = 0; i < keywords.length; i++) {
+              const kw = keywords[i];
+              const actRows = await query("SELECT DISTINCT ticket_id FROM ticket_activities WHERE message LIKE ?", [`%${kw}%`]);
+              const comRows = await query("SELECT DISTINCT ticket_id FROM comments WHERE message LIKE ?", [`%${kw}%`]);
+              const ids = [...actRows.map(r => r.ticket_id.toString()), ...comRows.map(r => r.ticket_id.toString())];
+              if (i === 0) {
+                combinedTicketIds = ids;
+              } else {
+                combinedTicketIds = combinedTicketIds.filter(id => ids.includes(id));
+              }
+            }
+            commentTicketIds = combinedTicketIds;
+          } catch (err) {
+            console.error("Error querying activities:", err);
+          }
+
+          matchingTickets = allTickets.filter(t => {
+            // Check direct match on fields
+            const targetStr = [
+              t.ticket_number,
+              t.title,
+              t.description,
+              t.caller,
+              t.category,
+              t.subcategory,
+              t.assigned_to_name,
+              t.created_by_name,
+              t.status,
+              t.priority
+            ].filter(Boolean).join(" ").toLowerCase();
+
+            const directMatch = keywords.every(kw => targetStr.includes(kw));
+            const commentMatch = commentTicketIds.includes(t.id.toString());
+            return directMatch || commentMatch;
+          });
+        }
+
+        // Apply filters to matching tickets
+        if (filters) {
+          if (filters.status) {
+            matchingTickets = matchingTickets.filter(t => t.status && t.status.toLowerCase() === filters.status.toLowerCase());
+          }
+          if (filters.priority) {
+            matchingTickets = matchingTickets.filter(t => t.priority && t.priority.toLowerCase() === filters.priority.toLowerCase());
+          }
+          if (filters.category) {
+            matchingTickets = matchingTickets.filter(t => t.category && t.category.toLowerCase() === filters.category.toLowerCase());
+          }
+          if (filters.assignee) {
+            matchingTickets = matchingTickets.filter(t => {
+              const assignedTo = t.assigned_to || t.assignedTo || "";
+              const assignedToName = t.assigned_to_name || t.assignedToName || "";
+              return assignedTo.toLowerCase() === filters.assignee.toLowerCase() || assignedToName.toLowerCase() === filters.assignee.toLowerCase();
+            });
+          }
+          if (filters.caller) {
+            matchingTickets = matchingTickets.filter(t => t.caller && t.caller.toLowerCase().includes(filters.caller.toLowerCase()));
+          }
+          if (filters.subject) {
+            matchingTickets = matchingTickets.filter(t => t.title && t.title.toLowerCase().includes(filters.subject.toLowerCase()));
+          }
+          if (filters.watchList) {
+            matchingTickets = matchingTickets.filter(t => {
+              const watchList = t.watch_list || t.watchList || "";
+              return watchList.toLowerCase().includes(filters.watchList.toLowerCase());
+            });
+          }
+          if (filters.dateRange && (filters.dateRange.start || filters.dateRange.end)) {
+            const start = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
+            const end = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+            const dateFieldKey = filters.dateField === "updated" ? "updated_at" : "created_at";
+            const dateFieldKeyCamel = filters.dateField === "updated" ? "updatedAt" : "createdAt";
+            matchingTickets = matchingTickets.filter(t => {
+              const dateVal = t[dateFieldKey] || t[dateFieldKeyCamel] || t.created_at || t.createdAt;
+              if (!dateVal) return false;
+              const d = new Date(dateVal);
+              if (isNaN(d.getTime())) return false;
+              if (start && d < start) return false;
+              if (end && d > end) return false;
+              return true;
+            });
+          }
+        }
+
+        // Categorize tickets into Incidents, Service Requests, and Tasks
+        matchingTickets.forEach(t => {
+          const isServiceRequest = (t.category && t.category.toLowerCase() === "service request") || (t.incident_category && t.incident_category.toLowerCase() === "service request");
+          
+          // Tasks check: Active status, and assigned to the user
+          const isTask = (t.status === "New" || t.status === "Open" || t.status === "In Progress") && 
+                         (userId && (t.assigned_to === userId || (userDetails && t.assigned_to === userDetails.email)));
+
+          if (isTask) {
+            tasksList.push(t);
+          }
+          
+          if (isServiceRequest) {
+            serviceRequests.push(t);
+          } else {
+            incidents.push(t);
+          }
+        });
+      }
+
+      // --- 2. SEARCH PROBLEMS ---
+      if (isAgentOrAdmin && (shouldSearch("problems") || shouldSearch("problem"))) {
+        let allProblems: any[] = [];
+        if (firestoreDb) {
+          try {
+            const snap = await fsGetDocs(fsCollection(firestoreDb, "problems"));
+            allProblems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch (e) {
+            console.error("Error fetching problems:", e);
+          }
+        }
+        
+        // Filter by keywords
+        let matchingProblems = allProblems;
+        if (keywords.length > 0) {
+          matchingProblems = allProblems.filter(p => {
+            const targetStr = [p.id, p.title, p.description, p.status, p.priority, p.category].filter(Boolean).join(" ").toLowerCase();
+            return keywords.every(kw => targetStr.includes(kw));
+          });
+        }
+
+        // Apply filters
+        if (filters) {
+          if (filters.status) {
+            matchingProblems = matchingProblems.filter(p => p.status && p.status.toLowerCase() === filters.status.toLowerCase());
+          }
+          if (filters.priority) {
+            matchingProblems = matchingProblems.filter(p => p.priority && p.priority.toLowerCase() === filters.priority.toLowerCase());
+          }
+          if (filters.category) {
+            matchingProblems = matchingProblems.filter(p => p.category && p.category.toLowerCase() === filters.category.toLowerCase());
+          }
+          if (filters.dateRange && (filters.dateRange.start || filters.dateRange.end)) {
+            const start = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
+            const end = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+            matchingProblems = matchingProblems.filter(p => {
+              const dateVal = p.createdAt || p.created_at;
+              if (!dateVal) return false;
+              const d = new Date(dateVal);
+              if (isNaN(d.getTime())) return false;
+              if (start && d < start) return false;
+              if (end && d > end) return false;
+              return true;
+            });
+          }
+        }
+        problems = matchingProblems;
+      }
+
+      // --- 3. SEARCH CHANGES ---
+      if (isAgentOrAdmin && (shouldSearch("changes") || shouldSearch("change"))) {
+        let allChanges: any[] = [];
+        if (firestoreDb) {
+          try {
+            const snap = await fsGetDocs(fsCollection(firestoreDb, "changes"));
+            allChanges = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch (e) {
+            console.error("Error fetching changes:", e);
+          }
+        }
+
+        // Filter by keywords
+        let matchingChanges = allChanges;
+        if (keywords.length > 0) {
+          matchingChanges = allChanges.filter(c => {
+            const targetStr = [c.id, c.title, c.description, c.state, c.status, c.priority, c.category, c.risk].filter(Boolean).join(" ").toLowerCase();
+            return keywords.every(kw => targetStr.includes(kw));
+          });
+        }
+
+        // Apply filters
+        if (filters) {
+          if (filters.status) {
+            matchingChanges = matchingChanges.filter(c => {
+              const cStatus = c.state || c.status || "";
+              return cStatus.toLowerCase() === filters.status.toLowerCase();
+            });
+          }
+          if (filters.priority) {
+            matchingChanges = matchingChanges.filter(c => c.priority && c.priority.toLowerCase() === filters.priority.toLowerCase());
+          }
+          if (filters.category) {
+            matchingChanges = matchingChanges.filter(c => c.category && c.category.toLowerCase() === filters.category.toLowerCase());
+          }
+          if (filters.dateRange && (filters.dateRange.start || filters.dateRange.end)) {
+            const start = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
+            const end = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+            matchingChanges = matchingChanges.filter(c => {
+              const dateVal = c.createdAt || c.created_at;
+              if (!dateVal) return false;
+              const d = new Date(dateVal);
+              if (isNaN(d.getTime())) return false;
+              if (start && d < start) return false;
+              if (end && d > end) return false;
+              return true;
+            });
+          }
+        }
+        changes = matchingChanges;
+      }
+
+      // --- 4. SEARCH KB ARTICLES ---
+      if (shouldSearch("kb_articles") || shouldSearch("kb")) {
+        let allKb: any[] = [];
+        if (firestoreDb) {
+          try {
+            const snap = await fsGetDocs(fsCollection(firestoreDb, "kb_articles"));
+            allKb = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } catch (e) {
+            console.error("Error fetching KB articles:", e);
+          }
+        }
+
+        // Filter by keywords
+        let matchingKb = allKb;
+        if (keywords.length > 0) {
+          matchingKb = allKb.filter(a => {
+            const targetStr = [a.title, a.content, a.category, a.author].filter(Boolean).join(" ").toLowerCase();
+            return keywords.every(kw => targetStr.includes(kw));
+          });
+        }
+
+        // Apply filters
+        if (filters) {
+          if (filters.category) {
+            matchingKb = matchingKb.filter(a => a.category && a.category.toLowerCase() === filters.category.toLowerCase());
+          }
+          if (filters.dateRange && (filters.dateRange.start || filters.dateRange.end)) {
+            const start = filters.dateRange.start ? new Date(filters.dateRange.start) : null;
+            const end = filters.dateRange.end ? new Date(filters.dateRange.end) : null;
+            matchingKb = matchingKb.filter(a => {
+              const dateVal = a.createdAt || a.created_at;
+              if (!dateVal) return false;
+              const d = new Date(dateVal);
+              if (isNaN(d.getTime())) return false;
+              if (start && d < start) return false;
+              if (end && d > end) return false;
+              return true;
+            });
+          }
+        }
+        kbArticles = matchingKb;
+      }
+
+      // --- 5. SEARCH USERS ---
+      if (isAgentOrAdmin && (shouldSearch("users") || shouldSearch("user"))) {
+        let allUsers: any[] = [];
+        try {
+          allUsers = await query("SELECT id, uid, name, email, role, phone, is_active FROM users");
+        } catch (e) {
+          console.error("Error fetching users:", e);
+        }
+
+        // Filter by keywords
+        let matchingUsers = allUsers;
+        if (keywords.length > 0) {
+          matchingUsers = allUsers.filter(u => {
+            const targetStr = [u.name, u.email, u.role, u.phone].filter(Boolean).join(" ").toLowerCase();
+            return keywords.every(kw => targetStr.includes(kw));
+          });
+        }
+        usersList = matchingUsers;
+      }
+
+      // --- 6. SEARCH ASSETS ---
+      if (isAgentOrAdmin && (shouldSearch("assets") || shouldSearch("asset"))) {
+        const MOCK_ASSETS = [
+          { id: "CI001", name: "PROD-WEB-01", type: "Server", status: "Operational", owner: "IT Ops", location: "Data Center A" },
+          { id: "CI002", name: "PROD-DB-01", type: "Database", status: "Operational", owner: "DBA Team", location: "Data Center A" },
+          { id: "CI003", name: "CORP-FW-01", type: "Network", status: "Operational", owner: "Security", location: "Edge" },
+          { id: "CI004", name: "ERP-Application", type: "Application", status: "Degraded", owner: "App Support", location: "Cloud" },
+          { id: "CI005", name: "Laptop-JD-001", type: "Hardware", status: "Operational", owner: "John Doe", location: "Remote" },
+        ];
+
+        let matchingAssets = MOCK_ASSETS;
+        if (keywords.length > 0) {
+          matchingAssets = MOCK_ASSETS.filter(a => {
+            const targetStr = [a.id, a.name, a.type, a.status, a.owner, a.location].filter(Boolean).join(" ").toLowerCase();
+            return keywords.every(kw => targetStr.includes(kw));
+          });
+        }
+        assetsList = matchingAssets;
+      }
+
+      // Return unified results
+      res.json({
+        incidents,
+        serviceRequests,
+        problems,
+        changes,
+        kbArticles,
+        users: usersList,
+        assets: assetsList,
+        tasks: tasksList
+      });
+
+    } catch (error: any) {
+      console.error("Global search error:", error);
+      res.status(500).json({ error: "Global search failed" });
+    }
+  });
+
   // Timesheet Endpoints
   app.get("/api/timesheets", async (req, res) => {
     try {
@@ -2177,7 +2935,7 @@ async function startServer() {
           const admins = await query("SELECT email, name FROM users WHERE role IN ('admin', 'super_admin', 'ultra_super_admin')");
           const ts = await query("SELECT * FROM timesheets WHERE id = ?", [id]);
           const user = await query("SELECT name FROM users WHERE uid = ?", [ts[0].user_id]);
-          
+
           for (const admin of admins) {
             await OmniChannelEngine.sendEmail(
               admin.email,
@@ -2724,7 +3482,7 @@ Respond ONLY with valid JSON.`;
         ) ENGINE=InnoDB
       `);
     }
-    
+
     // Ensure tables have latest columns
     try {
       if (useSQLite) {
@@ -3020,7 +3778,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
   });
 
   // â•â•â• ACTIVITY ENTRIES CRUD â•â•â•
-    app.post('/api/activity-entries', async (req: any, res: any) => {
+  app.post('/api/activity-entries', async (req: any, res: any) => {
     try {
       const { session_id, user_id, screenshot_url, screenshot_filename, screenshot_format,
         screenshot_size_kb, activity_label, description, confidence, captured_at, keystrokes, clicks } = req.body;
@@ -3063,10 +3821,10 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
       const { id } = req.params;
       const fields = Object.keys(req.body).filter(k => k !== 'id' && k !== 'created_at');
       if (fields.length === 0) return res.json({ message: "No fields to update" });
-      
+
       const setClause = fields.map(k => `${k} = ?`).join(', ');
       const values = [...fields.map(k => req.body[k]), id];
-      
+
       await execute(`UPDATE activity_entries SET ${setClause} WHERE id = ?`, values);
       const updated = await query('SELECT * FROM activity_entries WHERE id = ?', [id]);
       res.json({ id: id.toString(), ...updated[0] });
@@ -3137,7 +3895,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
   // â•â•â• GLOBAL INPUT TRACKING â•â•â•
   let globalKeystrokes = 0;
   let globalClicks = 0;
-  
+
   try {
     uIOhook.on('keydown', () => { globalKeystrokes++; });
     uIOhook.on('click', () => { globalClicks++; });
@@ -3161,12 +3919,12 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
       const { exec } = await import('child_process');
       const { promisify } = await import('util');
       const execAsync = promisify(exec);
-      
+
       const ts = Date.now();
       const filename = `screen_${ts}.jpg`;
       const publicDir = path.join(process.cwd(), 'public', 'captures');
       const tempDir = path.join(process.cwd(), '.temp');
-      
+
       if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
@@ -3258,7 +4016,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
       res.status(500).json({ error: "Failed to capture screen", detail: error.message });
     } finally {
       if (scriptPath && fs.existsSync(scriptPath)) {
-        try { fs.unlinkSync(scriptPath); } catch {}
+        try { fs.unlinkSync(scriptPath); } catch { }
       }
     }
   });
@@ -3266,9 +4024,9 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
   // â•â•â• MASTER DATA APIS â•â•â•
 
   const VALID_MASTER_TABLES = [
-    'mst_groups', 'mst_statuses', 'mst_roles', 'mst_departments', 
-    'mst_ticket_types', 'mst_projects', 'mst_priorities', 
-    'mst_sources', 'mst_tags', 'mst_categories', 'mst_subcategories', 
+    'mst_groups', 'mst_statuses', 'mst_roles', 'mst_departments',
+    'mst_ticket_types', 'mst_projects', 'mst_priorities',
+    'mst_sources', 'mst_tags', 'mst_categories', 'mst_subcategories',
     'mst_providences', 'mst_members'
   ];
 
@@ -3312,7 +4070,7 @@ Respond ONLY with JSON: {"summary": "your summary here"}`;
       const allowedSortCols = ['name', 'created_at', 'id', 'level', 'status'];
       const finalSort = allowedSortCols.includes(sort as string) ? sort : 'name';
       const finalOrder = order === 'DESC' ? 'DESC' : 'ASC';
-      
+
       sql += ` ORDER BY ${finalSort} ${finalOrder}`;
 
       const rows = await query(sql, params);
@@ -3744,7 +4502,7 @@ Respond in a conversational, friendly tone.`;
   // Opaque, intelligent rule-based local fallback helper
   function callSmartMockFallback(message: string): string {
     const msg = message.toLowerCase();
-    
+
     if (msg.includes("ticket") || msg.includes("incident") || msg.includes("inc")) {
       return `I can definitely help you with tickets! ðŸŽ«\n\nIf you want to create a new ticket, you can navigate to the **Incident** section in the sidebar and click **Create New Incident**.\n\nCould you please provide the title and a short description of the issue you are experiencing so I can assist you better?`;
     }
@@ -3779,7 +4537,7 @@ What specific logic or programming language are we working with today?`;
     if (msg.includes("hello") || msg.includes("hi") || msg.includes("hey") || msg.includes("kiru")) {
       return `Hello! ðŸ‘‹ I'm **Kiru**, your intelligent IT service management assistant.\n\nI can help you with:\n- Troubleshooting IT issues (Network, WiFi, Software, etc.)\n- Explaining SLAs and Ticket management\n- System Navigation & Settings\n\nHow can I help you today?`;
     }
-    
+
     return `That's an interesting question! As **Kiru**, your IT assistant, I'm here to ensure everything runs smoothly.\n\nTo give you the most accurate help, could you provide a bit more context or detail about what you are trying to accomplish? I can troubleshoot technical issues, guide you through tickets, or explain system policies!`;
   }
 
@@ -3853,6 +4611,38 @@ Respond in a conversational, friendly tone.`,
       res.json({ response: responseText, source: "smart_mock_error_fallback" });
     }
   });
+
+  const mapCompanyRow = (row: any) => {
+    if (!row) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      contactName: row.contact_name,
+      phone: row.phone,
+      email: row.email,
+      address1: row.address1,
+      address2: row.address2,
+      city: row.city,
+      province: row.province,
+      postalCode: row.postal_code,
+      country: row.country,
+      website: row.website,
+      logoUrl: row.logo_url,
+      type: row.type,
+      status: row.status,
+      email_integration_id: row.email_integration_id,
+      primaryColor: row.primary_color,
+      secondaryColor: row.secondary_color,
+      supportSignature: row.support_signature,
+      industry: row.industry,
+      priorityTier: row.priority_tier,
+      defaultAssignmentGroup: row.default_assignment_group,
+      defaultSlaPolicy: row.default_sla_policy,
+      defaultSupportMailbox: row.default_support_mailbox,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  };
 
   // GET /api/companies GÇô List all companies
   app.get("/api/companies", async (req, res) => {
@@ -4403,6 +5193,15 @@ Respond in a conversational, friendly tone.`,
       console.log('[SLAEngine] Monitoring SLA breaches...');
       SLAEngine.monitorBreaches();
     });
+
+    // Check Firestore SLA breaches every 15 seconds
+    setInterval(async () => {
+      try {
+        await checkFirestoreSLABreaches();
+      } catch (err: any) {
+        console.error("Firestore SLA checking interval error:", err.message);
+      }
+    }, 15000);
   });
 }
 

@@ -517,10 +517,14 @@ export class ActivityWatcher {
     if (this.opts.captureScreenshots) {
       // Test if server-side capture works first
       let serverCaptureWorks = false;
-      try {
-        const test = await fetch('/api/capture-screen', { signal: AbortSignal.timeout(3000) });
-        serverCaptureWorks = test.ok;
-      } catch { /* server capture not available */ }
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        serverCaptureWorks = true;
+      } else {
+        try {
+          const test = await fetch('/api/capture-screen', { signal: AbortSignal.timeout(5000) });
+          serverCaptureWorks = test.ok;
+        } catch { /* server capture not available */ }
+      }
 
       // Only fall back to getDisplayMedia if server capture doesn't work
       if (!serverCaptureWorks && !(window as any).electronAPI?.isElectron) {

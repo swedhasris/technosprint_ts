@@ -1,0 +1,285 @@
+/* Ticklora Global Overlay Assistant Stylesheet - Max Z-Index Layer */
+
+.ticklora-global-overlay-root {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+  transition: opacity 0.25s ease !important;
+}
+
+.ticklora-global-overlay-root * {
+  box-sizing: border-box !important;
+}
+
+/* Snapping transition */
+.ticklora-overlay-snapping {
+  transition: left 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  transition-property: left, top !important;
+}
+
+/* Premium glassmorphic toolbar/dock */
+.ticklora-overlay-bar {
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: rgba(15, 23, 42, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 
+    0 16px 40px -8px rgba(0, 0, 0, 0.6), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    0 0 1px 1px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(20px) saturate(1.2) !important;
+  padding: 6px 14px 6px 8px !important;
+  border-radius: 9999px !important;
+  color: #f8fafc !important;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1) !important;
+}
+
+.ticklora-overlay-bar:hover {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 
+    0 20px 48px -6px rgba(0, 0, 0, 0.7), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.16),
+    0 0 16px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Drag Handle Grip */
+.ticklora-overlay-drag-handle {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 36px !important;
+  cursor: grab !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.ticklora-overlay-drag-handle:active {
+  cursor: grabbing !important;
+  color: #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.ticklora-overlay-drag-handle svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Mascot Holder wrapper */
+.ticklora-overlay-mascot-container {
+  width: 52px !important;
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+/* Glassmorphic Speech Tooltip */
+.ticklora-overlay-bubble {
+  position: absolute !important;
+  bottom: 74px !important;
+  right: -24px !important;
+  width: 210px !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  padding: 10px 12px !important;
+  border-radius: 16px !important;
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  color: #f1f5f9 !important;
+  font-weight: 500 !important;
+  transform-origin: bottom center !important;
+  animation: tickloraBubbleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+  pointer-events: auto !important;
+}
+
+.ticklora-overlay-bubble-header {
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: #3b82f6 !important;
+  margin-bottom: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.ticklora-overlay-bubble-arrow {
+  position: absolute !important;
+  bottom: -6px !important;
+  left: 36px !important;
+  width: 10px !important;
+  height: 10px !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transform: rotate(45deg) !important;
+}
+
+/* Actions Wrapper */
+.ticklora-overlay-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+/* Divider block */
+.ticklora-overlay-divider {
+  width: 1px !important;
+  height: 22px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Action button units */
+.ticklora-overlay-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+}
+
+.ticklora-overlay-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.ticklora-overlay-btn:active {
+  transform: translateY(0.5px) !important;
+}
+
+.ticklora-overlay-btn svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+.ticklora-overlay-btn.active {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: #3b82f6 !important;
+}
+
+/* Minimized Edge pill */
+.ticklora-overlay-minimized {
+  pointer-events: auto !important;
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 
+    0 8px 24px rgba(79, 70, 229, 0.45), 
+    0 0 0 4px rgba(79, 70, 229, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+  cursor: grab !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  position: relative !important;
+}
+
+.ticklora-overlay-minimized:active {
+  cursor: grabbing !important;
+}
+
+.ticklora-overlay-minimized:hover {
+  transform: scale(1.08) !important;
+  box-shadow: 
+    0 10px 28px rgba(79, 70, 229, 0.55), 
+    0 0 0 6px rgba(79, 70, 229, 0.2) !important;
+}
+
+.ticklora-overlay-minimized-pulse {
+  position: absolute !important;
+  top: -2px !important;
+  right: -2px !important;
+  width: 14px !important;
+  height: 14px !important;
+  background-color: #ef4444 !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Animations */
+@keyframes tickloraBubbleIn {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tickloraFloat {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.ticklora-mascot-float {
+  animation: tickloraFloat 3s ease-in-out infinite !important;
+}
+
+@keyframes tickloraSleep {
+  0% { transform: translateY(0) scale(1) rotate(0deg); filter: brightness(0.7); }
+  50% { transform: translateY(2px) scale(0.98) rotate(-1deg); filter: brightness(0.65); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); filter: brightness(0.7); }
+}
+
+.ticklora-mascot-sleep {
+  animation: tickloraSleep 4s ease-in-out infinite !important;
+}
+
+@keyframes tickloraThink {
+  0% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-2px) rotate(-1.5deg); }
+  66% { transform: translateY(-2px) rotate(1.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.ticklora-mascot-think {
+  animation: tickloraThink 4.5s ease-in-out infinite !important;
+}
+
+@keyframes tickloraCelebrate {
+  0% { transform: scale(1) translateY(0); }
+  25% { transform: scale(1.05) translateY(-5px) rotate(-3deg); }
+  75% { transform: scale(1.05) translateY(-5px) rotate(3deg); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.ticklora-mascot-celebrate {
+  animation: tickloraCelebrate 1.2s ease-in-out infinite !important;
+}
+
+/* Zero-Touch double rendering prevention */
+body:has(#ticklora-global-overlay-container) div[style*="z-index: 99999"],
+body:has(#ticklora-global-overlay-container) div[style*="zIndex: 99999"],
+body:has(#ticklora-global-overlay-container) #ai-tracker-pet-root {
+  display: none !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}

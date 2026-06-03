@@ -8,7 +8,7 @@ import RecentActivityList from "../components/RecentActivityList";
 import MyTasksList from "../components/MyTasksList";
 import QuickActions from "../components/QuickActions";
 import { db } from "../lib/firebase";
-import { collection, query, onSnapshot } from "firebase/firestore";
+import { collection, query, onSnapshot, where } from "firebase/firestore";
 
 const MOCK_DATA = {
   cards: { totalAssigned: 0, totalCreated: 0, open: 0, inProgress: 0, resolved: 0, closed: 0, pending: 0, overdue: 0 },
@@ -46,6 +46,22 @@ const MOCK_DATA = {
 export function MyDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState<any>(null);
+  const [breaches, setBreaches] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const breachesRef = collection(db, "sla_breaches");
+    const qBreaches = query(breachesRef, where("assigned_user", "==", user.uid));
+    const unsubscribeBreaches = onSnapshot(qBreaches, (snapshot) => {
+      const userBreaches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setBreaches(userBreaches);
+    }, (error) => {
+      console.warn("[MyDashboard] Firestore SLA breaches subscription failed (non-fatal):", error.message);
+    });
+
+    return unsubscribeBreaches;
+  }, [user]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -230,6 +246,7 @@ export function MyDashboard() {
         });
 
       setData({
+        allTickets,
         cards: {
           totalAssigned: assigned.length,
           totalCreated: created.length,
@@ -316,6 +333,9 @@ export function MyDashboard() {
           <Link to="/tickets?filter=overdue" className="block cursor-pointer">
             <AnalyticsCard title="Overdue Tickets" value={data.cards.overdue} />
           </Link>
+          <div className="block cursor-pointer">
+            <AnalyticsCard title="Total SLA Breaches" value={breaches.length} />
+          </div>
         </div>
 
         {/* Performance Analytics */}
@@ -340,6 +360,60 @@ export function MyDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <RecentActivityList items={data.recentActivity} />
           <MyTasksList tasks={data.myTasks} />
+        </div>
+
+        {/* SLA Breaches Section */}
+        <div className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg rounded-xl border border-border p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-foreground mb-4">My SLA Breaches</h2>
+          {breaches.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No SLA breaches recorded for your assigned tickets.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Ticket Number</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">SLA Name</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Breach Duration</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Breach Timeslot</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Breach Time</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Current Status</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Responsible User</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {breaches.map((breach) => {
+                    const matchedTicket = data.allTickets?.find((t: any) => t.id === breach.record_id);
+                    return (
+                      <tr key={breach.id} className="hover:bg-muted/10 transition-colors">
+                        <td className="p-3">
+                          <Link to={`/tickets/${breach.record_id}`} className="font-mono text-sm font-bold text-blue-600 hover:underline">
+                            {matchedTicket?.number || "INC—"}
+                          </Link>
+                        </td>
+                        <td className="p-3 text-sm">{breach.sla_name}</td>
+                        <td className="p-3 text-sm text-red-600 font-bold">{breach.breach_duration}</td>
+                        <td className="p-3 text-sm">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                            {breach.breach_timeslot}
+                          </span>
+                        </td>
+                        <td className="p-3 text-sm text-muted-foreground">
+                          {breach.breach_timestamp ? new Date(breach.breach_timestamp).toLocaleString() : "—"}
+                        </td>
+                        <td className="p-3 text-sm">
+                          <span className="px-2 py-0.5 rounded bg-muted text-xs font-bold uppercase text-muted-foreground">
+                            {matchedTicket?.status || "—"}
+                          </span>
+                        </td>
+                        <td className="p-3 text-sm text-muted-foreground">{breach.assigned_user_name || "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -13,5 +13,8 @@ contextBridge.exposeInMainWorld('petBridge', {
   },
   setIgnoreMouseEvents: (ignore, options) => {
     ipcRenderer.send('pet-set-ignore-mouse-events', ignore, options);
+  },
+  stopTracker: () => {
+    ipcRenderer.send('stop-tracker-click');
   }
 });

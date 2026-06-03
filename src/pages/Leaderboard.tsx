@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Medal, Star, Target, RefreshCw, ShieldCheck, Clock, Zap } from "lucide-react";
+import { Trophy, Medal, Star, Target, RefreshCw, ShieldCheck, Clock, Zap, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { db, firebaseAvailable } from "../lib/firebase";
+import { cn } from "../lib/utils";
 
 // Module-level helpers (accessible to all sub-components in this file)
 function getInitial(value: string) {
@@ -41,10 +42,41 @@ export function Leaderboard() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  const [metricTab, setMetricTab] = useState<"performance" | "breaches">("performance");
+  const [breachStats, setBreachStats] = useState<any[]>([]);
+
   useEffect(() => {
     fetchLeaderboard();
     const interval = setInterval(fetchLeaderboard, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!firebaseAvailable) return;
+    const q = query(collection(db, "sla_breaches"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const userBreaches: Record<string, { id: string; name: string; count: number; details: any[] }> = {};
+      snapshot.docs.forEach((d) => {
+        const b = d.data();
+        const userId = b.assigned_user || "unassigned";
+        const userName = b.assigned_user_name || "Unassigned";
+        if (!userBreaches[userId]) {
+          userBreaches[userId] = {
+            id: userId,
+            name: userName,
+            count: 0,
+            details: []
+          };
+        }
+        userBreaches[userId].count += 1;
+        userBreaches[userId].details.push(b);
+      });
+      const sortedBreaches = Object.values(userBreaches).sort((a, b) => b.count - a.count);
+      setBreachStats(sortedBreaches);
+    }, (err) => {
+      console.error("[Leaderboard] SLA breaches subscription error:", err);
+    });
+    return unsubscribe;
   }, []);
 
   const parseDate = (value: any): Date | null => {
@@ -218,8 +250,18 @@ export function Leaderboard() {
     }
   };
 
+  const displayList = metricTab === "performance" ? leaderboard : breachStats.map(b => ({
+    id: b.id,
+    name: b.name,
+    slaScore: b.count,
+    complianceRate: 0,
+    resolvedCount: 0,
+    onTimeCount: 0,
+    breachedCount: b.count
+  }));
+
   // Podium order: 2nd (left), 1st (center), 3rd (right)
-  const podiumOrder = [leaderboard[1], leaderboard[0], leaderboard[2]];
+  const podiumOrder = [displayList[1], displayList[0], displayList[2]];
   const podiumIndex = [1, 0, 2]; // maps podiumOrder back to rank index
   const getPodiumStyles = (rankIndex: number) => {
     switch (rankIndex) {
@@ -273,6 +315,26 @@ export function Leaderboard() {
           <h1 className="text-4xl font-black tracking-tight">SLA Performance Leaderboard</h1>
           <p className="text-muted-foreground text-lg mt-1">Rankings powered by SLA compliance &amp; resolution speed</p>
         </div>
+        <div className="flex gap-2 p-1 bg-secondary border border-border rounded-xl max-w-sm w-full mt-2 justify-center">
+          <button
+            onClick={() => setMetricTab("performance")}
+            className={cn(
+              "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+              metricTab === "performance" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            SLA Performance
+          </button>
+          <button
+            onClick={() => setMetricTab("breaches")}
+            className={cn(
+              "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+              metricTab === "breaches" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            SLA Breaches
+          </button>
+        </div>
         <div className="flex items-center gap-2 px-4 py-1.5 bg-secondary rounded-full text-sm font-medium">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           Live · {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Loading..."}
@@ -280,7 +342,7 @@ export function Leaderboard() {
       </header>
 
       {/* Podium */}
-      {leaderboard.length > 0 ? (
+      {displayList.length > 0 ? (
         <div className="grid grid-cols-3 gap-4 items-end pt-14">
           {podiumOrder.map((user, podiumPos) => {
             const rankIdx = podiumIndex[podiumPos];
@@ -295,6 +357,7 @@ export function Leaderboard() {
                 styles={styles}
                 delay={podiumPos === 1 ? 0 : 0.2}
                 isLarge={isCenter}
+                isBreaches={metricTab === "breaches"}
               />
             );
           })}
@@ -302,13 +365,17 @@ export function Leaderboard() {
       ) : (
         <div className="text-center py-16 space-y-3">
           <Trophy className="w-16 h-16 text-muted-foreground/20 mx-auto" />
-          <p className="text-muted-foreground font-medium text-lg">No resolved tickets today yet.</p>
-          <p className="text-muted-foreground text-sm">Resolve tickets to earn points and appear on the board!</p>
+          <p className="text-muted-foreground font-medium text-lg">
+            {metricTab === "breaches" ? "No SLA breaches recorded." : "No resolved tickets today yet."}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {metricTab === "breaches" ? "All active tickets are meeting their SLA targets!" : "Resolve tickets to earn points and appear on the board!"}
+          </p>
         </div>
       )}
 
       {/* Rankings table */}
-      {leaderboard.length > 0 && (
+      {displayList.length > 0 && (
         <div className="bg-card/50 backdrop-blur-md border border-border rounded-2xl overflow-hidden shadow-xl">
           <div className="px-6 py-4 border-b border-border bg-muted/50 flex justify-between items-center">
             <h2 className="font-bold flex items-center gap-2">
@@ -316,15 +383,21 @@ export function Leaderboard() {
               SLA Rankings
             </h2>
             <div className="flex gap-6 text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              <span>SLA Score</span>
-              <span>Compliance</span>
-              <span>Resolved</span>
+              {metricTab === "breaches" ? (
+                <span>Total Breaches</span>
+              ) : (
+                <>
+                  <span>SLA Score</span>
+                  <span>Compliance</span>
+                  <span>Resolved</span>
+                </>
+              )}
             </div>
           </div>
 
           <div className="divide-y divide-border">
             <AnimatePresence mode="popLayout">
-              {leaderboard.map((user, idx) => (
+              {displayList.map((user, idx) => (
                 <motion.div
                   key={user.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -348,28 +421,38 @@ export function Leaderboard() {
                     <div>
                       <div className="font-semibold">{user.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {user.resolvedCount} ticket{user.resolvedCount !== 1 ? "s" : ""} · {user.avgResolutionMinutes}m avg
+                        {metricTab === "breaches" ? (
+                          <span>SLA Breaches</span>
+                        ) : (
+                          <span>{user.resolvedCount} ticket{user.resolvedCount !== 1 ? "s" : ""} · {user.avgResolutionMinutes}m avg</span>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
-                    {/* SLA Score */}
-                    <div className="flex items-center gap-1 font-bold text-primary min-w-[60px] justify-end">
-                      <Star className="w-4 h-4 fill-primary" />
-                      {user.slaScore}
-                    </div>
-                    {/* Compliance Rate */}
-                    <div className={`w-16 text-right font-bold text-sm ${
-                      user.complianceRate >= 90 ? "text-green-500" :
-                      user.complianceRate >= 70 ? "text-yellow-500" :
-                      "text-red-500"
-                    }`}>
-                      {user.complianceRate}%
-                    </div>
-                    {/* Resolved Count */}
-                    <div className="w-12 text-right font-mono text-sm text-muted-foreground">
-                      {user.resolvedCount}
-                    </div>
+                    {metricTab === "breaches" ? (
+                      <div className="flex items-center gap-1 font-bold text-red-500 min-w-[120px] justify-end">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        {user.slaScore} Breaches
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-1 font-bold text-primary min-w-[60px] justify-end">
+                          <Star className="w-4 h-4 fill-primary" />
+                          {user.slaScore}
+                        </div>
+                        <div className={`w-16 text-right font-bold text-sm ${
+                          user.complianceRate >= 90 ? "text-green-500" :
+                          user.complianceRate >= 70 ? "text-yellow-500" :
+                          "text-red-500"
+                        }`}>
+                          {user.complianceRate}%
+                        </div>
+                        <div className="w-12 text-right font-mono text-sm text-muted-foreground">
+                          {user.resolvedCount}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -410,13 +493,14 @@ export function Leaderboard() {
 }
 
 function PodiumCard({
-  user, rankIndex, styles, delay, isLarge = false
+  user, rankIndex, styles, delay, isLarge = false, isBreaches = false
 }: {
-  user: SLAStat;
+  user: any;
   rankIndex: number;
   styles: any;
   delay: number;
   isLarge?: boolean;
+  isBreaches?: boolean;
   key?: React.Key;
 }) {
   const rankLabels = ["🥇 1st", "🥈 2nd", "🥉 3rd"];
@@ -452,26 +536,46 @@ function PodiumCard({
         <div className="text-center pb-6 space-y-2 z-10 px-2">
           <h3 className="font-bold text-base leading-tight truncate max-w-[120px]">{user.name}</h3>
 
-          {/* SLA Score */}
-          <div className={`flex items-center justify-center gap-1 font-black text-2xl ${styles.color}`}>
-            <Star className="w-5 h-5 fill-current" />
-            {user.slaScore}
-          </div>
+          {/* SLA Score / Breaches */}
+          {isBreaches ? (
+            <div className="flex items-center justify-center gap-1 font-black text-2xl text-red-500">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              {user.slaScore}
+            </div>
+          ) : (
+            <div className={`flex items-center justify-center gap-1 font-black text-2xl ${styles.color}`}>
+              <Star className="w-5 h-5 fill-current" />
+              {user.slaScore}
+            </div>
+          )}
 
-          {/* SLA Compliance Badge */}
-          <div className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-            user.complianceRate >= 90 ? "bg-green-500/20 text-green-400" :
-            user.complianceRate >= 70 ? "bg-yellow-500/20 text-yellow-400" :
-            "bg-red-500/20 text-red-400"
-          }`}>
-            <ShieldCheck className="w-3 h-3" />
-            {user.complianceRate}% SLA
-          </div>
+          {/* SLA Compliance Badge / Breach Badge */}
+          {isBreaches ? (
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-500/20 text-red-400">
+              <AlertCircle className="w-3 h-3 text-red-400" />
+              SLA Breached
+            </div>
+          ) : (
+            <div className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+              user.complianceRate >= 90 ? "bg-green-500/20 text-green-400" :
+              user.complianceRate >= 70 ? "bg-yellow-500/20 text-yellow-400" :
+              "bg-red-500/20 text-red-400"
+            }`}>
+              <ShieldCheck className="w-3 h-3" />
+              {user.complianceRate}% SLA
+            </div>
+          )}
 
           <div className="text-[11px] text-muted-foreground font-medium space-y-0.5">
-            <div>{user.resolvedCount} resolved · {user.onTimeCount} on-time</div>
-            {user.breachedCount > 0 && (
-              <div className="text-red-400">{user.breachedCount} breached</div>
+            {isBreaches ? (
+              <div>{user.breachedCount} breach{user.breachedCount !== 1 ? "es" : ""}</div>
+            ) : (
+              <>
+                <div>{user.resolvedCount} resolved · {user.onTimeCount} on-time</div>
+                {user.breachedCount > 0 && (
+                  <div className="text-red-400">{user.breachedCount} breached</div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -854,722 +854,722 @@ export function Tickets() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
                 {/* Left Column */}
                 {isFeatureVisible("section.leftColumn") && (
-                <div className="space-y-4">
-                  {/* Number */}
-                  {isFeatureVisible("field.number") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Number</label>
-                    <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs font-mono h-8"
-                      value={previewNumber}
-                    />
-                  </div>
-                  )}
-
-                  {/* Reporting User */}
-                  {isFeatureVisible("field.caller") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium uppercase leading-tight flex items-center justify-end gap-1">
-                      <span className="text-red-500">*</span> Reporting User
-                    </label>
-                    <div className="col-span-2 relative">
-                      <div className="flex gap-1">
-                        <input
-                          required={getFieldRequired("field.caller", true)}
-                          placeholder="Search for caller..."
-                          value={callerSearch || newTicket.caller}
-                          onChange={e => {
-                            setCallerSearch(e.target.value);
-                            setShowCallerResults(true);
-                            setNewTicket({ ...newTicket, caller: e.target.value });
-                          }}
-                          onFocus={() => setShowCallerResults(true)}
-                          className={getInputClassName("field.caller", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
-                          disabled={isFeatureDisabled("field.caller")}
-                          readOnly={isFeatureReadOnly("field.caller")}
+                  <div className="space-y-4">
+                    {/* Number */}
+                    {isFeatureVisible("field.number") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Number</label>
+                        <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs font-mono h-8"
+                          value={previewNumber}
                         />
-                        {isFeatureVisible("button.searchCaller") && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => setShowCallerResults(!showCallerResults)}
-                            disabled={isFeatureDisabled("button.searchCaller")}
-                          >
-                            <Search className="w-3 h-3" />
-                          </Button>
-                        )}
                       </div>
-                      {showCallerResults && callerSearch && !isFeatureDisabled("button.searchCaller") && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-border rounded-md shadow-lg max-h-40 overflow-y-auto custom-scrollbar">
-                          {allUsers.filter(u =>
-                            u.name?.toLowerCase().includes(callerSearch.toLowerCase()) ||
-                            u.email?.toLowerCase().includes(callerSearch.toLowerCase())
-                          ).map(u => (
-                            <div
-                              key={u.id}
-                              className="p-2 hover:bg-sn-green/10 cursor-pointer text-xs"
-                              onClick={() => {
-                                setNewTicket({ ...newTicket, caller: u.name || u.email });
-                                setCallerSearch(u.name || u.email);
-                                setShowCallerResults(false);
-                              }}
-                            >
-                              <div className="font-bold">{u.name}</div>
-                              <div className="text-[10px] text-muted-foreground">{u.email}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  )}
+                    )}
 
-                  {/* Affected User */}
-                  {isFeatureVisible("field.affectedUser") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium uppercase leading-tight flex items-center justify-end gap-1">
-                      <span className="text-red-500">*</span> Affected User
-                    </label>
-                    <div className="col-span-2 relative">
-                      <div className="flex gap-1">
-                        <input
-                          required={getFieldRequired("field.affectedUser")}
-                          placeholder="Search affected user..."
-                          value={affectedSearch || newTicket.affectedUser || ''}
-                          onChange={e => {
-                            setAffectedSearch(e.target.value);
-                            setShowAffectedResults(true);
-                            setNewTicket({ ...newTicket, affectedUser: e.target.value });
-                          }}
-                          onFocus={() => setShowAffectedResults(true)}
-                          className={getInputClassName("field.affectedUser", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
-                          disabled={isFeatureDisabled("field.affectedUser")}
-                          readOnly={isFeatureReadOnly("field.affectedUser")}
-                        />
-                        {isFeatureVisible("button.searchAffectedUser") && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => setShowAffectedResults(!showAffectedResults)}
-                            disabled={isFeatureDisabled("button.searchAffectedUser")}
-                          >
-                            <Search className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                      {showAffectedResults && affectedSearch && !isFeatureDisabled("button.searchAffectedUser") && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-border rounded-md shadow-lg max-h-40 overflow-y-auto custom-scrollbar">
-                          {allUsers.filter(u =>
-                            u.name?.toLowerCase().includes(affectedSearch.toLowerCase()) ||
-                            u.email?.toLowerCase().includes(affectedSearch.toLowerCase())
-                          ).map(u => (
-                            <div
-                              key={u.id}
-                              className="p-2 hover:bg-sn-green/10 cursor-pointer text-xs"
-                              onClick={() => {
-                                setNewTicket({ ...newTicket, affectedUser: u.name || u.email });
-                                setAffectedSearch(u.name || u.email);
-                                setShowAffectedResults(false);
-                              }}
-                            >
-                              <div className="font-bold">{u.name}</div>
-                              <div className="text-[10px] text-muted-foreground">{u.email}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  )}
-
-                  {/* Watch list (CC) */}
-                  {isFeatureVisible("field.watchList") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Watch list</label>
-                    <div className="col-span-2 flex gap-1">
-                      <input
-                        value={newTicket.watchList}
-                        onChange={e => setNewTicket({ ...newTicket, watchList: e.target.value })}
-                        placeholder="Separate emails with commas"
-                        className={getInputClassName("field.watchList", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
-                        disabled={isFeatureDisabled("field.watchList")}
-                        readOnly={isFeatureReadOnly("field.watchList")}
-                      />
-                      {isFeatureVisible("button.watchListLookup") && (
-                        <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.watchListLookup")}><Users className="w-3 h-3" /></Button>
-                      )}
-                    </div>
-                  </div>
-                  )}
-
-                  {/* Business Phone */}
-                  {isFeatureVisible("field.businessPhone") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Business phone</label>
-                    <input
-                      value={newTicket.businessPhone}
-                      onChange={e => setNewTicket({ ...newTicket, businessPhone: e.target.value })}
-                      className={getInputClassName("field.businessPhone", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                      required={getFieldRequired("field.businessPhone")}
-                      disabled={isFeatureDisabled("field.businessPhone")}
-                      readOnly={isFeatureReadOnly("field.businessPhone")}
-                    />
-                  </div>
-                  )}
-
-                  {/* Location */}
-                  {isFeatureVisible("field.location") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Location</label>
-                    <div className="col-span-2 flex gap-1">
-                      <input
-                        value={newTicket.location}
-                        onChange={e => setNewTicket({ ...newTicket, location: e.target.value })}
-                        className={getInputClassName("field.location", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                        required={getFieldRequired("field.location")}
-                        disabled={isFeatureDisabled("field.location")}
-                        readOnly={isFeatureReadOnly("field.location")}
-                      />
-                      {isFeatureVisible("button.locationLookup") && (
-                        <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.locationLookup")}><Search className="w-3 h-3" /></Button>
-                      )}
-                    </div>
-                  </div>
-                  )}
-
-                  {/* Company */}
-                  {isFeatureVisible("field.company") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Company</label>
-                    <select
-                      value={newTicket.company}
-                      onChange={e => setNewTicket({ ...newTicket, company: e.target.value })}
-                      className={getInputClassName("field.company", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
-                      required={getFieldRequired("field.company")}
-                      disabled={isFeatureDisabled("field.company")}
-                    >
-                      <option value="">-- None --</option>
-                      {companies.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  )}
-
-                  {/* Category */}
-                  {isFeatureVisible("field.category") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
-                      <span className="text-red-500 font-bold">*</span> Category
-                    </label>
-                    <select
-                      required={getFieldRequired("field.category", true)}
-                      value={newTicket.category}
-                      onChange={e => {
-                        setNewTicket({ 
-                          ...newTicket, 
-                          category: e.target.value, 
-                          subcategory: "", 
-                          service: "" 
-                        });
-                      }}
-                      className={getInputClassName("field.category", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white")}
-                      disabled={isFeatureDisabled("field.category")}
-                    >
-                      <option value="">-- Select Category --</option>
-                      {IT_SERVICE_CATALOG.map((item) => (
-                        <option key={item.category} value={item.category}>{item.category}</option>
-                      ))}
-                    </select>
-                  </div>
-                  )}
-
-                  {/* Incident Category Dynamic Custom Dropdowns */}
-                  {(["admin", "super_admin", "ultra_super_admin"].includes(profile?.role || "") ||
-                    ["arun@technosprint.net", "ulter@technosprint.net", "admin@technosprint.net", "admin@connectit.local", "demo-admin@connectit.local", "demo-super_admin@connectit.local", "demo-ultra_super_admin@connectit.local"].includes(user?.email || profile?.email || "")) && (
-                    <>
-                      {dynamicFields.map((field) => {
-                        const fieldOptions = dynamicOptions[field.id] || [];
-                        return (
-                          <div key={field.id} className="grid grid-cols-3 items-center gap-4">
-                            <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
-                              <span className="text-red-500 font-bold">*</span> {field.name}
-                            </label>
-                            <select
-                              value={newTicket.customFields?.[field.id] || ""}
+                    {/* Reporting User */}
+                    {isFeatureVisible("field.caller") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium uppercase leading-tight flex items-center justify-end gap-1">
+                          <span className="text-red-500">*</span> Reporting User
+                        </label>
+                        <div className="col-span-2 relative">
+                          <div className="flex gap-1">
+                            <input
+                              required={getFieldRequired("field.caller", true)}
+                              placeholder="Search for caller..."
+                              value={callerSearch || newTicket.caller}
                               onChange={e => {
-                                setNewTicket((prev: any) => ({
-                                  ...prev,
-                                  customFields: {
-                                    ...(prev.customFields || {}),
-                                    [field.id]: e.target.value
-                                  }
-                                }));
+                                setCallerSearch(e.target.value);
+                                setShowCallerResults(true);
+                                setNewTicket({ ...newTicket, caller: e.target.value });
                               }}
-                              className="col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white"
-                              required
-                            >
-                              <option value="">Select {field.name}</option>
-                              {fieldOptions.map((opt: any) => (
-                                <option key={opt.id} value={opt.value_text}>{opt.value_text}</option>
-                              ))}
-                            </select>
+                              onFocus={() => setShowCallerResults(true)}
+                              className={getInputClassName("field.caller", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
+                              disabled={isFeatureDisabled("field.caller")}
+                              readOnly={isFeatureReadOnly("field.caller")}
+                            />
+                            {isFeatureVisible("button.searchCaller") && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => setShowCallerResults(!showCallerResults)}
+                                disabled={isFeatureDisabled("button.searchCaller")}
+                              >
+                                <Search className="w-3 h-3" />
+                              </Button>
+                            )}
                           </div>
-                        );
-                      })}
-                      {dynamicFields.length === 0 && (
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
-                            Incident Category
-                          </label>
-                          <select
-                            disabled
-                            className="col-span-2 p-1.5 border border-border rounded text-xs outline-none h-8 bg-muted/20"
-                          >
-                            <option>No dynamic custom categories defined</option>
-                          </select>
+                          {showCallerResults && callerSearch && !isFeatureDisabled("button.searchCaller") && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-border rounded-md shadow-lg max-h-40 overflow-y-auto custom-scrollbar">
+                              {allUsers.filter(u =>
+                                u.name?.toLowerCase().includes(callerSearch.toLowerCase()) ||
+                                u.email?.toLowerCase().includes(callerSearch.toLowerCase())
+                              ).map(u => (
+                                <div
+                                  key={u.id}
+                                  className="p-2 hover:bg-sn-green/10 cursor-pointer text-xs"
+                                  onClick={() => {
+                                    setNewTicket({ ...newTicket, caller: u.name || u.email });
+                                    setCallerSearch(u.name || u.email);
+                                    setShowCallerResults(false);
+                                  }}
+                                >
+                                  <div className="font-bold">{u.name}</div>
+                                  <div className="text-[10px] text-muted-foreground">{u.email}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Affected User */}
+                    {isFeatureVisible("field.affectedUser") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium uppercase leading-tight flex items-center justify-end gap-1">
+                          <span className="text-red-500">*</span> Affected User
+                        </label>
+                        <div className="col-span-2 relative">
+                          <div className="flex gap-1">
+                            <input
+                              required={getFieldRequired("field.affectedUser")}
+                              placeholder="Search affected user..."
+                              value={affectedSearch || newTicket.affectedUser || ''}
+                              onChange={e => {
+                                setAffectedSearch(e.target.value);
+                                setShowAffectedResults(true);
+                                setNewTicket({ ...newTicket, affectedUser: e.target.value });
+                              }}
+                              onFocus={() => setShowAffectedResults(true)}
+                              className={getInputClassName("field.affectedUser", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
+                              disabled={isFeatureDisabled("field.affectedUser")}
+                              readOnly={isFeatureReadOnly("field.affectedUser")}
+                            />
+                            {isFeatureVisible("button.searchAffectedUser") && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => setShowAffectedResults(!showAffectedResults)}
+                                disabled={isFeatureDisabled("button.searchAffectedUser")}
+                              >
+                                <Search className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                          {showAffectedResults && affectedSearch && !isFeatureDisabled("button.searchAffectedUser") && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-border rounded-md shadow-lg max-h-40 overflow-y-auto custom-scrollbar">
+                              {allUsers.filter(u =>
+                                u.name?.toLowerCase().includes(affectedSearch.toLowerCase()) ||
+                                u.email?.toLowerCase().includes(affectedSearch.toLowerCase())
+                              ).map(u => (
+                                <div
+                                  key={u.id}
+                                  className="p-2 hover:bg-sn-green/10 cursor-pointer text-xs"
+                                  onClick={() => {
+                                    setNewTicket({ ...newTicket, affectedUser: u.name || u.email });
+                                    setAffectedSearch(u.name || u.email);
+                                    setShowAffectedResults(false);
+                                  }}
+                                >
+                                  <div className="font-bold">{u.name}</div>
+                                  <div className="text-[10px] text-muted-foreground">{u.email}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Watch list (CC) */}
+                    {isFeatureVisible("field.watchList") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Watch list</label>
+                        <div className="col-span-2 flex gap-1">
+                          <input
+                            value={newTicket.watchList}
+                            onChange={e => setNewTicket({ ...newTicket, watchList: e.target.value })}
+                            placeholder="Separate emails with commas"
+                            className={getInputClassName("field.watchList", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
+                            disabled={isFeatureDisabled("field.watchList")}
+                            readOnly={isFeatureReadOnly("field.watchList")}
+                          />
+                          {isFeatureVisible("button.watchListLookup") && (
+                            <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.watchListLookup")}><Users className="w-3 h-3" /></Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Business Phone */}
+                    {isFeatureVisible("field.businessPhone") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Business phone</label>
+                        <input
+                          value={newTicket.businessPhone}
+                          onChange={e => setNewTicket({ ...newTicket, businessPhone: e.target.value })}
+                          className={getInputClassName("field.businessPhone", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                          required={getFieldRequired("field.businessPhone")}
+                          disabled={isFeatureDisabled("field.businessPhone")}
+                          readOnly={isFeatureReadOnly("field.businessPhone")}
+                        />
+                      </div>
+                    )}
+
+                    {/* Location */}
+                    {isFeatureVisible("field.location") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Location</label>
+                        <div className="col-span-2 flex gap-1">
+                          <input
+                            value={newTicket.location}
+                            onChange={e => setNewTicket({ ...newTicket, location: e.target.value })}
+                            className={getInputClassName("field.location", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                            required={getFieldRequired("field.location")}
+                            disabled={isFeatureDisabled("field.location")}
+                            readOnly={isFeatureReadOnly("field.location")}
+                          />
+                          {isFeatureVisible("button.locationLookup") && (
+                            <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.locationLookup")}><Search className="w-3 h-3" /></Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Company */}
+                    {isFeatureVisible("field.company") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Company</label>
+                        <select
+                          value={newTicket.company}
+                          onChange={e => setNewTicket({ ...newTicket, company: e.target.value })}
+                          className={getInputClassName("field.company", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8")}
+                          required={getFieldRequired("field.company")}
+                          disabled={isFeatureDisabled("field.company")}
+                        >
+                          <option value="">-- None --</option>
+                          {companies.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Category */}
+                    {isFeatureVisible("field.category") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
+                          <span className="text-red-500 font-bold">*</span> Category
+                        </label>
+                        <select
+                          required={getFieldRequired("field.category", true)}
+                          value={newTicket.category}
+                          onChange={e => {
+                            setNewTicket({
+                              ...newTicket,
+                              category: e.target.value,
+                              subcategory: "",
+                              service: ""
+                            });
+                          }}
+                          className={getInputClassName("field.category", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white")}
+                          disabled={isFeatureDisabled("field.category")}
+                        >
+                          <option value="">-- Select Category --</option>
+                          {IT_SERVICE_CATALOG.map((item) => (
+                            <option key={item.category} value={item.category}>{item.category}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Incident Category Dynamic Custom Dropdowns */}
+                    {(["admin", "super_admin", "ultra_super_admin"].includes(profile?.role || "") ||
+                      ["arun@technosprint.net", "ulter@technosprint.net", "admin@technosprint.net", "admin@connectit.local", "demo-admin@connectit.local", "demo-super_admin@connectit.local", "demo-ultra_super_admin@connectit.local"].includes(user?.email || profile?.email || "")) && (
+                        <>
+                          {dynamicFields.map((field) => {
+                            const fieldOptions = dynamicOptions[field.id] || [];
+                            return (
+                              <div key={field.id} className="grid grid-cols-3 items-center gap-4">
+                                <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
+                                  <span className="text-red-500 font-bold">*</span> {field.name}
+                                </label>
+                                <select
+                                  value={newTicket.customFields?.[field.id] || ""}
+                                  onChange={e => {
+                                    setNewTicket((prev: any) => ({
+                                      ...prev,
+                                      customFields: {
+                                        ...(prev.customFields || {}),
+                                        [field.id]: e.target.value
+                                      }
+                                    }));
+                                  }}
+                                  className="col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white"
+                                  required
+                                >
+                                  <option value="">Select {field.name}</option>
+                                  {fieldOptions.map((opt: any) => (
+                                    <option key={opt.id} value={opt.value_text}>{opt.value_text}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })}
+                          {dynamicFields.length === 0 && (
+                            <div className="grid grid-cols-3 items-center gap-4">
+                              <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
+                                Incident Category
+                              </label>
+                              <select
+                                disabled
+                                className="col-span-2 p-1.5 border border-border rounded text-xs outline-none h-8 bg-muted/20"
+                              >
+                                <option>No dynamic custom categories defined</option>
+                              </select>
+                            </div>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
 
-                  {/* Subcategory */}
-                  {isFeatureVisible("field.subcategory") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
-                      <span className="text-red-500 font-bold">*</span> Subcategory
-                    </label>
-                    <select
-                      required={getFieldRequired("field.subcategory", true)}
-                      value={newTicket.subcategory}
-                      onChange={e => {
-                        setNewTicket({ 
-                          ...newTicket, 
-                          subcategory: e.target.value, 
-                          service: "" 
-                        });
-                      }}
-                      className={getInputClassName("field.subcategory", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white disabled:opacity-50 disabled:bg-muted")}
-                      disabled={!newTicket.category || isFeatureDisabled("field.subcategory")}
-                    >
-                      <option value="">-- Select Subcategory --</option>
-                      {realisticSubcategories.map(s => (
-                        <option key={s.name} value={s.name}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  )}
+                    {/* Subcategory */}
+                    {isFeatureVisible("field.subcategory") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
+                          <span className="text-red-500 font-bold">*</span> Subcategory
+                        </label>
+                        <select
+                          required={getFieldRequired("field.subcategory", true)}
+                          value={newTicket.subcategory}
+                          onChange={e => {
+                            setNewTicket({
+                              ...newTicket,
+                              subcategory: e.target.value,
+                              service: ""
+                            });
+                          }}
+                          className={getInputClassName("field.subcategory", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white disabled:opacity-50 disabled:bg-muted")}
+                          disabled={!newTicket.category || isFeatureDisabled("field.subcategory")}
+                        >
+                          <option value="">-- Select Subcategory --</option>
+                          {realisticSubcategories.map(s => (
+                            <option key={s.name} value={s.name}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
-                  {/* Service */}
-                  {isFeatureVisible("field.service") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
-                      <span className="text-red-500 font-bold">*</span> Service
-                    </label>
-                    <select
-                      required={getFieldRequired("field.service", true)}
-                      value={newTicket.service}
-                      onChange={e => {
-                        setNewTicket({ ...newTicket, service: e.target.value });
-                      }}
-                      className={getInputClassName("field.service", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white disabled:opacity-50 disabled:bg-muted")}
-                      disabled={!newTicket.subcategory || isFeatureDisabled("field.service")}
-                    >
-                      <option value="">-- Select Service --</option>
-                      {realisticServices.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                  )}
+                    {/* Service */}
+                    {isFeatureVisible("field.service") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">
+                          <span className="text-red-500 font-bold">*</span> Service
+                        </label>
+                        <select
+                          required={getFieldRequired("field.service", true)}
+                          value={newTicket.service}
+                          onChange={e => {
+                            setNewTicket({ ...newTicket, service: e.target.value });
+                          }}
+                          className={getInputClassName("field.service", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green outline-none h-8 bg-white disabled:opacity-50 disabled:bg-muted")}
+                          disabled={!newTicket.subcategory || isFeatureDisabled("field.service")}
+                        >
+                          <option value="">-- Select Service --</option>
+                          {realisticServices.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
-                  {/* Service Offering */}
-                  {isFeatureVisible("field.serviceOffering") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Service Offering</label>
-                    <input
-                      value={newTicket.serviceOffering}
-                      onChange={e => setNewTicket({ ...newTicket, serviceOffering: e.target.value })}
-                      className={getInputClassName("field.serviceOffering", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                      required={getFieldRequired("field.serviceOffering")}
-                      disabled={isFeatureDisabled("field.serviceOffering")}
-                      readOnly={isFeatureReadOnly("field.serviceOffering")}
-                    />
-                  </div>
-                  )}
+                    {/* Service Offering */}
+                    {isFeatureVisible("field.serviceOffering") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Service Offering</label>
+                        <input
+                          value={newTicket.serviceOffering}
+                          onChange={e => setNewTicket({ ...newTicket, serviceOffering: e.target.value })}
+                          className={getInputClassName("field.serviceOffering", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                          required={getFieldRequired("field.serviceOffering")}
+                          disabled={isFeatureDisabled("field.serviceOffering")}
+                          readOnly={isFeatureReadOnly("field.serviceOffering")}
+                        />
+                      </div>
+                    )}
 
-                  {/* Configuration Item */}
-                  {isFeatureVisible("field.configurationItem") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Configuration item</label>
-                    <div className="col-span-2 flex gap-1">
-                      <input
-                        value={newTicket.configurationItem}
-                        onChange={e => setNewTicket({ ...newTicket, configurationItem: e.target.value })}
-                        className={getInputClassName("field.configurationItem", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                        required={getFieldRequired("field.configurationItem")}
-                        disabled={isFeatureDisabled("field.configurationItem")}
-                        readOnly={isFeatureReadOnly("field.configurationItem")}
-                      />
-                      {isFeatureVisible("button.configurationItemLookup") && (
-                        <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.configurationItemLookup")}><Search className="w-3 h-3" /></Button>
-                      )}
-                    </div>
-                  </div>
-                  )}
+                    {/* Configuration Item */}
+                    {isFeatureVisible("field.configurationItem") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Configuration item</label>
+                        <div className="col-span-2 flex gap-1">
+                          <input
+                            value={newTicket.configurationItem}
+                            onChange={e => setNewTicket({ ...newTicket, configurationItem: e.target.value })}
+                            className={getInputClassName("field.configurationItem", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                            required={getFieldRequired("field.configurationItem")}
+                            disabled={isFeatureDisabled("field.configurationItem")}
+                            readOnly={isFeatureReadOnly("field.configurationItem")}
+                          />
+                          {isFeatureVisible("button.configurationItemLookup") && (
+                            <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.configurationItemLookup")}><Search className="w-3 h-3" /></Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Computer Name */}
-                  {isFeatureVisible("field.computerName") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Computer Name</label>
-                    <div className="col-span-2 flex gap-1">
-                      <input
-                        value={newTicket.computerName}
-                        onChange={e => setNewTicket({ ...newTicket, computerName: e.target.value })}
-                        className={getInputClassName("field.computerName", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                        required={getFieldRequired("field.computerName")}
-                        disabled={isFeatureDisabled("field.computerName")}
-                        readOnly={isFeatureReadOnly("field.computerName")}
-                      />
-                      {isFeatureVisible("button.computerNameLookup") && (
-                        <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.computerNameLookup")}><Search className="w-3 h-3" /></Button>
-                      )}
-                    </div>
-                  </div>
-                  )}
+                    {/* Computer Name */}
+                    {isFeatureVisible("field.computerName") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Computer Name</label>
+                        <div className="col-span-2 flex gap-1">
+                          <input
+                            value={newTicket.computerName}
+                            onChange={e => setNewTicket({ ...newTicket, computerName: e.target.value })}
+                            className={getInputClassName("field.computerName", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                            required={getFieldRequired("field.computerName")}
+                            disabled={isFeatureDisabled("field.computerName")}
+                            readOnly={isFeatureReadOnly("field.computerName")}
+                          />
+                          {isFeatureVisible("button.computerNameLookup") && (
+                            <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.computerNameLookup")}><Search className="w-3 h-3" /></Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Impact */}
-                  {isFeatureVisible("field.impact") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Impact</label>
-                    <select
-                      value={newTicket.impact}
-                      onChange={e => setNewTicket({ ...newTicket, impact: e.target.value })}
-                      className={getInputClassName("field.impact", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8 transition-colors")}
-                      required={getFieldRequired("field.impact")}
-                      disabled={isFeatureDisabled("field.impact")}
-                    >
-                      <option>1 - High</option>
-                      <option>2 - Medium</option>
-                      <option>3 - Low</option>
-                    </select>
-                  </div>
-                  )}
+                    {/* Impact */}
+                    {isFeatureVisible("field.impact") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Impact</label>
+                        <select
+                          value={newTicket.impact}
+                          onChange={e => setNewTicket({ ...newTicket, impact: e.target.value })}
+                          className={getInputClassName("field.impact", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8 transition-colors")}
+                          required={getFieldRequired("field.impact")}
+                          disabled={isFeatureDisabled("field.impact")}
+                        >
+                          <option>1 - High</option>
+                          <option>2 - Medium</option>
+                          <option>3 - Low</option>
+                        </select>
+                      </div>
+                    )}
 
-                  {/* Urgency */}
-                  {isFeatureVisible("field.urgency") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Urgency</label>
-                    <select
-                      value={newTicket.urgency}
-                      onChange={e => setNewTicket({ ...newTicket, urgency: e.target.value })}
-                      className={getInputClassName("field.urgency", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8 transition-colors")}
-                      required={getFieldRequired("field.urgency")}
-                      disabled={isFeatureDisabled("field.urgency")}
-                    >
-                      <option>1 - High</option>
-                      <option>2 - Medium</option>
-                      <option>3 - Low</option>
-                    </select>
-                  </div>
-                  )}
+                    {/* Urgency */}
+                    {isFeatureVisible("field.urgency") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Urgency</label>
+                        <select
+                          value={newTicket.urgency}
+                          onChange={e => setNewTicket({ ...newTicket, urgency: e.target.value })}
+                          className={getInputClassName("field.urgency", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8 transition-colors")}
+                          required={getFieldRequired("field.urgency")}
+                          disabled={isFeatureDisabled("field.urgency")}
+                        >
+                          <option>1 - High</option>
+                          <option>2 - Medium</option>
+                          <option>3 - Low</option>
+                        </select>
+                      </div>
+                    )}
 
-                  {/* Priority */}
-                  {isFeatureVisible("field.priority") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Priority</label>
-                    <input
-                      disabled
-                      className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs font-bold text-blue-600 h-8"
-                      value={calculatePriority(newTicket.impact, newTicket.urgency)}
-                    />
-                  </div>
-                  )}
+                    {/* Priority */}
+                    {isFeatureVisible("field.priority") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Priority</label>
+                        <input
+                          disabled
+                          className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs font-bold text-blue-600 h-8"
+                          value={calculatePriority(newTicket.impact, newTicket.urgency)}
+                        />
+                      </div>
+                    )}
 
-                  {/* Knowledge Article Used */}
-                  {isFeatureVisible("field.knowledgeArticleUsed") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Knowledge Article Used?</label>
-                    <input
-                      type="checkbox"
-                      checked={newTicket.knowledgeArticleUsed}
-                      onChange={e => setNewTicket({ ...newTicket, knowledgeArticleUsed: e.target.checked })}
-                      className="w-4 h-4 accent-sn-green"
-                      disabled={isFeatureDisabled("field.knowledgeArticleUsed")}
-                    />
+                    {/* Knowledge Article Used */}
+                    {isFeatureVisible("field.knowledgeArticleUsed") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Knowledge Article Used?</label>
+                        <input
+                          type="checkbox"
+                          checked={newTicket.knowledgeArticleUsed}
+                          onChange={e => setNewTicket({ ...newTicket, knowledgeArticleUsed: e.target.checked })}
+                          className="w-4 h-4 accent-sn-green"
+                          disabled={isFeatureDisabled("field.knowledgeArticleUsed")}
+                        />
+                      </div>
+                    )}
                   </div>
-                  )}
-                </div>
                 )}
 
                 {/* Right Column */}
                 {isFeatureVisible("section.rightColumn") && (
-                <div className="space-y-4">
-                  {/* Opened */}
-                  {isFeatureVisible("field.opened") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Opened</label>
-                    <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs h-8"
-                      value={new Date().toLocaleString()}
-                    />
-                  </div>
-                  )}
+                  <div className="space-y-4">
+                    {/* Opened */}
+                    {isFeatureVisible("field.opened") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Opened</label>
+                        <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs h-8"
+                          value={new Date().toLocaleString()}
+                        />
+                      </div>
+                    )}
 
-                  {/* Opened by */}
-                  {isFeatureVisible("field.openedBy") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Opened by</label>
-                    <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs h-8"
-                      value={profile?.name || user?.email || ""}
-                    />
-                  </div>
-                  )}
+                    {/* Opened by */}
+                    {isFeatureVisible("field.openedBy") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Opened by</label>
+                        <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs h-8"
+                          value={profile?.name || user?.email || ""}
+                        />
+                      </div>
+                    )}
 
-                  {/* State */}
-                  {isFeatureVisible("field.state") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">State</label>
-                    <select
-                      disabled
-                      className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs outline-none h-8"
-                    >
-                      <option>New</option>
-                    </select>
-                  </div>
-                  )}
+                    {/* State */}
+                    {isFeatureVisible("field.state") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">State</label>
+                        <select
+                          disabled
+                          className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs outline-none h-8"
+                        >
+                          <option>New</option>
+                        </select>
+                      </div>
+                    )}
 
-                  {/* Assignment group */}
-                  {isFeatureVisible("field.assignmentGroup") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Assignment group</label>
-                    <div className="col-span-2 flex gap-1">
-                      <select
-                        value={newTicket.assignmentGroup}
-                        onChange={e => {
-                          const group = visibleGroups.find(g => g.name === e.target.value);
-                          setNewTicket({ ...newTicket, assignmentGroup: e.target.value, selectedGroupId: group?.id || "", assignedTo: "" });
-                        }}
-                        className={getInputClassName("field.assignmentGroup", "flex-grow p-1.5 border border-border rounded text-xs outline-none focus:ring-1 focus:ring-sn-green h-8")}
-                        required={getFieldRequired("field.assignmentGroup")}
-                        disabled={isFeatureDisabled("field.assignmentGroup")}
-                      >
-                        <option value="">-- Auto Assign --</option>
-                        {displayGroups.map((item) => (
-                          <option key={item.id} value={item.name}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </select>
-                      {isFeatureVisible("button.assignmentGroupLookup") && (
-                        <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.assignmentGroupLookup")}><Search className="w-3 h-3" /></Button>
-                      )}
-                    </div>
-                  </div>
-                  )}
+                    {/* Assignment group */}
+                    {isFeatureVisible("field.assignmentGroup") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Assignment group</label>
+                        <div className="col-span-2 flex gap-1">
+                          <select
+                            value={newTicket.assignmentGroup}
+                            onChange={e => {
+                              const group = visibleGroups.find(g => g.name === e.target.value);
+                              setNewTicket({ ...newTicket, assignmentGroup: e.target.value, selectedGroupId: group?.id || "", assignedTo: "" });
+                            }}
+                            className={getInputClassName("field.assignmentGroup", "flex-grow p-1.5 border border-border rounded text-xs outline-none focus:ring-1 focus:ring-sn-green h-8")}
+                            required={getFieldRequired("field.assignmentGroup")}
+                            disabled={isFeatureDisabled("field.assignmentGroup")}
+                          >
+                            <option value="">-- Auto Assign --</option>
+                            {displayGroups.map((item) => (
+                              <option key={item.id} value={item.name}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </select>
+                          {isFeatureVisible("button.assignmentGroupLookup") && (
+                            <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.assignmentGroupLookup")}><Search className="w-3 h-3" /></Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Assigned to */}
-                  {isFeatureVisible("field.assignedTo") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Assigned to</label>
-                    <div className="col-span-2 flex gap-1">
-                      <select
-                        value={newTicket.assignedTo}
-                        onChange={e => setNewTicket({ ...newTicket, assignedTo: e.target.value })}
-                        className={getInputClassName("field.assignedTo", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                        required={getFieldRequired("field.assignedTo")}
-                        disabled={isFeatureDisabled("field.assignedTo")}
-                      >
-                        <option value="">-- Select Member --</option>
-                        {visibleMembers.map(m => (
-                          <option key={m.id} value={m.id}>{m.name || m.userName}</option>
-                        ))}
-                      </select>
-                      {isFeatureVisible("button.assignedToLookup") && (
-                        <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.assignedToLookup")}><Search className="w-3 h-3" /></Button>
-                      )}
-                    </div>
-                  </div>
-                  )}
+                    {/* Assigned to */}
+                    {isFeatureVisible("field.assignedTo") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Assigned to</label>
+                        <div className="col-span-2 flex gap-1">
+                          <select
+                            value={newTicket.assignedTo}
+                            onChange={e => setNewTicket({ ...newTicket, assignedTo: e.target.value })}
+                            className={getInputClassName("field.assignedTo", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                            required={getFieldRequired("field.assignedTo")}
+                            disabled={isFeatureDisabled("field.assignedTo")}
+                          >
+                            <option value="">-- Select Member --</option>
+                            {visibleMembers.map(m => (
+                              <option key={m.id} value={m.id}>{m.name || m.userName}</option>
+                            ))}
+                          </select>
+                          {isFeatureVisible("button.assignedToLookup") && (
+                            <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" disabled={isFeatureDisabled("button.assignedToLookup")}><Search className="w-3 h-3" /></Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Original Assignment Group */}
-                  {isFeatureVisible("field.originalAssignmentGroup") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Original Assignment Group</label>
-                    <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs h-8"
-                      value={newTicket.assignmentGroup || ""}
-                    />
-                  </div>
-                  )}
+                    {/* Original Assignment Group */}
+                    {isFeatureVisible("field.originalAssignmentGroup") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Original Assignment Group</label>
+                        <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs h-8"
+                          value={newTicket.assignmentGroup || ""}
+                        />
+                      </div>
+                    )}
 
-                  {/* Acknowledged */}
-                  {isFeatureVisible("field.acknowledged") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Acknowledged</label>
-                    <input
-                      type="checkbox"
-                      checked={newTicket.acknowledged}
-                      onChange={e => setNewTicket({ ...newTicket, acknowledged: e.target.checked })}
-                      className="w-4 h-4 accent-sn-green"
-                      disabled={isFeatureDisabled("field.acknowledged")}
-                    />
-                  </div>
-                  )}
+                    {/* Acknowledged */}
+                    {isFeatureVisible("field.acknowledged") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Acknowledged</label>
+                        <input
+                          type="checkbox"
+                          checked={newTicket.acknowledged}
+                          onChange={e => setNewTicket({ ...newTicket, acknowledged: e.target.checked })}
+                          className="w-4 h-4 accent-sn-green"
+                          disabled={isFeatureDisabled("field.acknowledged")}
+                        />
+                      </div>
+                    )}
 
-                  {/* Channel */}
-                  {isFeatureVisible("field.channel") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Channel</label>
-                    <select
-                      value={newTicket.channel}
-                      onChange={e => setNewTicket({ ...newTicket, channel: e.target.value })}
-                      className={getInputClassName("field.channel", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                      required={getFieldRequired("field.channel")}
-                      disabled={isFeatureDisabled("field.channel")}
-                    >
-                      <option>Self-service</option>
-                      <option>Email</option>
-                      <option>Phone</option>
-                      <option>Chat</option>
-                      <option>Portal</option>
-                    </select>
-                  </div>
-                  )}
+                    {/* Channel */}
+                    {isFeatureVisible("field.channel") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Channel</label>
+                        <select
+                          value={newTicket.channel}
+                          onChange={e => setNewTicket({ ...newTicket, channel: e.target.value })}
+                          className={getInputClassName("field.channel", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                          required={getFieldRequired("field.channel")}
+                          disabled={isFeatureDisabled("field.channel")}
+                        >
+                          <option>Self-service</option>
+                          <option>Email</option>
+                          <option>Phone</option>
+                          <option>Chat</option>
+                          <option>Portal</option>
+                        </select>
+                      </div>
+                    )}
 
-                  {/* Password Reset? */}
-                  {isFeatureVisible("field.passwordReset") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Password Reset?</label>
-                    <select
-                      value={newTicket.passwordReset}
-                      onChange={e => setNewTicket({ ...newTicket, passwordReset: e.target.value })}
-                      className={getInputClassName("field.passwordReset", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                      required={getFieldRequired("field.passwordReset")}
-                      disabled={isFeatureDisabled("field.passwordReset")}
-                    >
-                      <option>No</option>
-                      <option>Yes</option>
-                    </select>
-                  </div>
-                  )}
+                    {/* Password Reset? */}
+                    {isFeatureVisible("field.passwordReset") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Password Reset?</label>
+                        <select
+                          value={newTicket.passwordReset}
+                          onChange={e => setNewTicket({ ...newTicket, passwordReset: e.target.value })}
+                          className={getInputClassName("field.passwordReset", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                          required={getFieldRequired("field.passwordReset")}
+                          disabled={isFeatureDisabled("field.passwordReset")}
+                        >
+                          <option>No</option>
+                          <option>Yes</option>
+                        </select>
+                      </div>
+                    )}
 
-                  {/* Rackspace Ticket No */}
-                  {isFeatureVisible("field.rackspaceTicketNo") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Rackspace Ticket No</label>
-                    <input
-                      value={newTicket.rackspaceTicketNo}
-                      onChange={e => setNewTicket({ ...newTicket, rackspaceTicketNo: e.target.value })}
-                      className={getInputClassName("field.rackspaceTicketNo", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                      required={getFieldRequired("field.rackspaceTicketNo")}
-                      disabled={isFeatureDisabled("field.rackspaceTicketNo")}
-                      readOnly={isFeatureReadOnly("field.rackspaceTicketNo")}
-                    />
-                  </div>
-                  )}
+                    {/* Rackspace Ticket No */}
+                    {isFeatureVisible("field.rackspaceTicketNo") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Rackspace Ticket No</label>
+                        <input
+                          value={newTicket.rackspaceTicketNo}
+                          onChange={e => setNewTicket({ ...newTicket, rackspaceTicketNo: e.target.value })}
+                          className={getInputClassName("field.rackspaceTicketNo", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                          required={getFieldRequired("field.rackspaceTicketNo")}
+                          disabled={isFeatureDisabled("field.rackspaceTicketNo")}
+                          readOnly={isFeatureReadOnly("field.rackspaceTicketNo")}
+                        />
+                      </div>
+                    )}
 
-                  {/* Additional Information */}
-                  {isFeatureVisible("field.additionalInformation") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Additional Information</label>
-                    <input
-                      value={newTicket.additionalInformation}
-                      onChange={e => setNewTicket({ ...newTicket, additionalInformation: e.target.value })}
-                      className={getInputClassName("field.additionalInformation", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                      required={getFieldRequired("field.additionalInformation")}
-                      disabled={isFeatureDisabled("field.additionalInformation")}
-                      readOnly={isFeatureReadOnly("field.additionalInformation")}
-                    />
-                  </div>
-                  )}
+                    {/* Additional Information */}
+                    {isFeatureVisible("field.additionalInformation") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">Additional Information</label>
+                        <input
+                          value={newTicket.additionalInformation}
+                          onChange={e => setNewTicket({ ...newTicket, additionalInformation: e.target.value })}
+                          className={getInputClassName("field.additionalInformation", "col-span-2 p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                          required={getFieldRequired("field.additionalInformation")}
+                          disabled={isFeatureDisabled("field.additionalInformation")}
+                          readOnly={isFeatureReadOnly("field.additionalInformation")}
+                        />
+                      </div>
+                    )}
 
-                  {/* SLA due */}
-                  {isFeatureVisible("field.slaDue") && (
-                  <div className="grid grid-cols-3 items-center gap-4">
-                    <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">SLA due</label>
-                    <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs font-mono h-8"
-                      value={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleString()}
-                    />
+                    {/* SLA due */}
+                    {isFeatureVisible("field.slaDue") && (
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <label className="text-[11px] text-right font-medium text-muted-foreground uppercase leading-tight">SLA due</label>
+                        <input disabled className="col-span-2 p-1.5 bg-muted/30 border border-border rounded text-xs font-mono h-8"
+                          value={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleString()}
+                        />
+                      </div>
+                    )}
                   </div>
-                  )}
-                </div>
                 )}
               </div>
 
               {/* Full Width Fields */}
               {isFeatureVisible("section.fullWidth") && (
-              <div className="mt-8 space-y-4">
-                <div className="grid grid-cols-6 items-center gap-4">
-                  {isFeatureVisible("field.title") && (
-                  <>
-                  <label className="text-[11px] text-right font-medium uppercase leading-tight flex items-center justify-end gap-1">
-                    <span className="text-red-500">*</span> Short description
-                  </label>
-                  <div className="col-span-5 flex gap-2">
-                    <input
-                      required={getFieldRequired("field.title", true)}
-                      value={newTicket.title}
-                      onChange={e => setNewTicket({ ...newTicket, title: e.target.value })}
-                      className={getInputClassName("field.title", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
-                      disabled={isFeatureDisabled("field.title")}
-                      readOnly={isFeatureReadOnly("field.title")}
-                    />
-                    {isFeatureVisible("button.aiAutofill") && (
-                      <Button
-                        type="button"
-                        onClick={handleAIAssist}
-                        disabled={isAiLoading || isFeatureDisabled("button.aiAutofill")}
-                        className="bg-purple-600 hover:bg-purple-700 text-white h-8 text-[11px]"
-                      >
-                        {isAiLoading ? "Analyzing..." : "Autofill with AI"}
-                      </Button>
-                    )}
-                    {isFeatureVisible("button.dictation") && (
-                      <button
-                        type="button"
-                        onClick={() => speechControllerRef.current?.toggle()}
-                        disabled={!speechSupported || isFeatureDisabled("button.dictation")}
-                        className={cn(
-                          "p-1.5 hover:bg-muted rounded transition-colors ml-1 border border-border h-8 w-8 flex items-center justify-center",
-                          speechListening && "bg-sn-green/15 text-sn-green border-sn-green"
-                        )}
-                        title={speechListening ? "Stop Dictation" : "Dictation"}
-                      >
-                        <Mic className="w-4 h-4" />
-                      </button>
+                <div className="mt-8 space-y-4">
+                  <div className="grid grid-cols-6 items-center gap-4">
+                    {isFeatureVisible("field.title") && (
+                      <>
+                        <label className="text-[11px] text-right font-medium uppercase leading-tight flex items-center justify-end gap-1">
+                          <span className="text-red-500">*</span> Short description
+                        </label>
+                        <div className="col-span-5 flex gap-2">
+                          <input
+                            required={getFieldRequired("field.title", true)}
+                            value={newTicket.title}
+                            onChange={e => setNewTicket({ ...newTicket, title: e.target.value })}
+                            className={getInputClassName("field.title", "flex-grow p-1.5 border border-border rounded text-xs focus:ring-1 focus:ring-sn-green h-8")}
+                            disabled={isFeatureDisabled("field.title")}
+                            readOnly={isFeatureReadOnly("field.title")}
+                          />
+                          {isFeatureVisible("button.aiAutofill") && (
+                            <Button
+                              type="button"
+                              onClick={handleAIAssist}
+                              disabled={isAiLoading || isFeatureDisabled("button.aiAutofill")}
+                              className="bg-purple-600 hover:bg-purple-700 text-white h-8 text-[11px]"
+                            >
+                              {isAiLoading ? "Analyzing..." : "Autofill with AI"}
+                            </Button>
+                          )}
+                          {isFeatureVisible("button.dictation") && (
+                            <button
+                              type="button"
+                              onClick={() => speechControllerRef.current?.toggle()}
+                              disabled={!speechSupported || isFeatureDisabled("button.dictation")}
+                              className={cn(
+                                "p-1.5 hover:bg-muted rounded transition-colors ml-1 border border-border h-8 w-8 flex items-center justify-center",
+                                speechListening && "bg-sn-green/15 text-sn-green border-sn-green"
+                              )}
+                              title={speechListening ? "Stop Dictation" : "Dictation"}
+                            >
+                              <Mic className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
-                  </>
+                  {isFeatureVisible("field.description") && (
+                    <div className="grid grid-cols-6 items-start gap-4">
+                      <label className="text-[11px] text-right font-medium uppercase leading-tight mt-1">Description</label>
+                      <div className="col-span-5 space-y-1.5">
+                        <textarea
+                          rows={4}
+                          value={newTicket.description}
+                          onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
+                          className={cn(
+                            getInputClassName("field.description", "w-full p-1.5 border rounded text-xs focus:ring-1 focus:ring-sn-green resize-none h-32 transition-all"),
+                            suggestedSolution ? 'border-purple-400 ring-1 ring-purple-300 bg-purple-50' : 'border-border'
+                          )}
+                          placeholder="Describe the issue in detail... or use Autofill with AI above"
+                          required={getFieldRequired("field.description")}
+                          disabled={isFeatureDisabled("field.description")}
+                          readOnly={isFeatureReadOnly("field.description")}
+                        />
+                        {speechListening && (
+                          <div className="text-[10px] text-sn-green font-medium">
+                            Listening{speechLiveText ? `: ${speechLiveText}` : "..."}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-                {isFeatureVisible("field.description") && (
-                <div className="grid grid-cols-6 items-start gap-4">
-                  <label className="text-[11px] text-right font-medium uppercase leading-tight mt-1">Description</label>
-                  <div className="col-span-5 space-y-1.5">
-                    <textarea
-                      rows={4}
-                      value={newTicket.description}
-                      onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
-                      className={cn(
-                        getInputClassName("field.description", "w-full p-1.5 border rounded text-xs focus:ring-1 focus:ring-sn-green resize-none h-32 transition-all"),
-                        suggestedSolution ? 'border-purple-400 ring-1 ring-purple-300 bg-purple-50' : 'border-border'
-                      )}
-                      placeholder="Describe the issue in detail... or use Autofill with AI above"
-                      required={getFieldRequired("field.description")}
-                      disabled={isFeatureDisabled("field.description")}
-                      readOnly={isFeatureReadOnly("field.description")}
-                    />
-                    {speechListening && (
-                      <div className="text-[10px] text-sn-green font-medium">
-                        Listening{speechLiveText ? `: ${speechLiveText}` : "..."}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                )}
-              </div>
               )}
 
               {/* Suggested Solution Box */}

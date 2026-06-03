@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Ticklora Global Assistant Overlay",
+  "version": "1.0.0",
+  "description": "Cross-website persistent floating overlay assistant for the Ticklora ITSM Ticketing System.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["overlay.css"]
+    }
+  ],
+  "action": {
+    "default_title": "Ticklora Overlay Assistant"
+  }
+}

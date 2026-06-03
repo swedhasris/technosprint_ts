@@ -483,7 +483,7 @@ export function Companies() {
                   {/* Card 6: Email Routing & Integration */}
                   <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-3.5">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">Email Routing & SLA</h3>
-                    
+
                     <div className="space-y-2.5 text-xs">
                       <div>
                         <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">SLA Policy</span>
@@ -615,7 +615,7 @@ export function Companies() {
                         let eventTitle = "";
                         let icon = Edit;
                         let color = "bg-indigo-500";
-                        
+
                         if (event.action === "created") {
                           eventTitle = `Company record created: "${event.new_value}"`;
                           icon = Building2;
@@ -626,7 +626,7 @@ export function Companies() {
                         } else {
                           eventTitle = `Company ${event.action}`;
                         }
-                        
+
                         const IconComponent = icon;
                         return (
                           <div key={event.id || i} className="relative flex items-start gap-3">

@@ -388,6 +388,120 @@
     .atp-warning { animation: atp-warning 0.6s ease-in-out infinite; }
     .atp-observe { animation: atp-observe 3.1s ease-in-out infinite; }
     .atp-happy { animation: atp-happy 1.8s ease-in-out infinite; }
+
+    /* Stop button custom style */
+    #btn-stop:hover {
+      background: rgba(239, 68, 68, 0.95) !important;
+      color: #fff !important;
+    }
+
+    /* Glassmorphic Log panel dropdown container */
+    #pet-log-panel {
+      position: absolute;
+      bottom: 110%; /* above overlay */
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(220px * var(--pet-scale));
+      max-height: calc(160px * var(--pet-scale));
+      background: rgba(11, 20, 26, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      z-index: 10002;
+      overflow: hidden;
+      animation: atp-appear 0.25s ease-out forwards;
+    }
+
+    .atp-log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: calc(6px * var(--pet-scale)) calc(10px * var(--pet-scale));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: calc(9px * var(--pet-scale));
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 0.02em;
+    }
+
+    .atp-log-close {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: calc(12px * var(--pet-scale));
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      transition: color 0.15s ease;
+    }
+
+    .atp-log-close:hover {
+      color: #ef4444;
+    }
+
+    .atp-log-body {
+      padding: calc(6px * var(--pet-scale)) calc(10px * var(--pet-scale));
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: calc(4px * var(--pet-scale));
+      max-height: calc(120px * var(--pet-scale));
+      text-align: left;
+    }
+
+    /* Scrollbars styling */
+    .atp-log-body::-webkit-scrollbar {
+      width: 4px;
+    }
+    .atp-log-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .atp-log-body::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+    }
+    .atp-log-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .atp-log-empty {
+      font-size: calc(8px * var(--pet-scale));
+      color: rgba(255, 255, 255, 0.4);
+      text-align: center;
+      padding: calc(12px * var(--pet-scale)) 0;
+    }
+
+    .atp-log-item {
+      font-size: calc(8px * var(--pet-scale));
+      line-height: 1.4;
+      display: flex;
+      gap: 5px;
+      align-items: flex-start;
+      border-left: 2px solid #3b82f6;
+      padding-left: 5px;
+    }
+
+    .atp-log-item.log-info { border-left-color: #3b82f6; }
+    .atp-log-item.log-success { border-left-color: #10b981; }
+    .atp-log-item.log-warning { border-left-color: #eab308; }
+    .atp-log-item.log-error { border-left-color: #ef4444; }
+
+    .atp-log-time {
+      color: rgba(255, 255, 255, 0.35);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .atp-log-msg {
+      color: rgba(255, 255, 255, 0.85);
+      word-break: break-word;
+    }
   </style>
 </head>
 <body>
@@ -402,7 +516,9 @@
       <button id="btn-lock" class="atp-btn" title="Lock/Unlock Position">🔓</button>
       <button id="btn-size-down" class="atp-btn" title="Resize Smaller">−</button>
       <button id="btn-size-up" class="atp-btn" title="Resize Larger">+</button>
-      <button id="btn-minimize" class="atp-btn" title="Minimize Control">_</button>
+      <button id="btn-stop" class="atp-btn" title="Stop AI Tracker">🛑</button>
+      <button id="btn-log" class="atp-btn" title="Toggle Activity Logs">📜</button>
+      <button id="btn-minimize" class="atp-btn" title="Hide Overlay">_</button>
     </div>
 
     <!-- 3D Mascot Image Display -->
@@ -424,6 +540,17 @@
         <span class="atp-heartbeat-dot"></span>Heartbeat Active
       </span>
     </div>
+
+    <!-- Real-Time Activity Logs Dropdown Panel -->
+    <div id="pet-log-panel" style="display: none;">
+      <div class="atp-log-header">
+        <span>Tracker Activity Logs</span>
+        <button id="btn-log-close" class="atp-log-close">×</button>
+      </div>
+      <div id="pet-log-body" class="atp-log-body">
+        <div class="atp-log-empty">No activity logs recorded.</div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -439,6 +566,12 @@
     const btnSizeDown = document.getElementById('btn-size-down');
     const btnSizeUp = document.getElementById('btn-size-up');
     const btnMinimize = document.getElementById('btn-minimize');
+    const btnStop = document.getElementById('btn-stop');
+    const btnLog = document.getElementById('btn-log');
+    const btnLogClose = document.getElementById('btn-log-close');
+    const logPanel = document.getElementById('pet-log-panel');
+    const logBody = document.getElementById('pet-log-body');
+    let showLogPanel = false;
 
     // State parameters
     let petPosition = { x: window.innerWidth - 140, y: window.innerHeight - 155 };
@@ -533,6 +666,37 @@
       applyPositionAndSize();
     });
 
+    btnStop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.petBridge?.stopTracker) {
+        window.petBridge.stopTracker();
+      }
+    });
+
+    btnLog.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showLogPanel = !showLogPanel;
+      updateLogPanelUI();
+    });
+
+    btnLogClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showLogPanel = false;
+      updateLogPanelUI();
+    });
+
+    function updateLogPanelUI() {
+      if (showLogPanel && !isMinimized) {
+        logPanel.style.display = 'flex';
+        // Hide regular tooltip while log is open
+        document.getElementById('pet-tooltip').style.display = 'none';
+      } else {
+        logPanel.style.display = 'none';
+        document.getElementById('pet-tooltip').style.display = 'flex';
+      }
+      applyPositionAndSize();
+    }
+
     // Double-click minimized container to restore
     container.addEventListener('dblclick', (e) => {
       if (isMinimized) {
@@ -576,8 +740,19 @@
       const rect = container.getBoundingClientRect();
       const pad = 12; // hover padding buffer
       
-      const insideX = e.clientX >= rect.left - pad && e.clientX <= rect.right + pad;
-      const insideY = e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
+      let insideX = e.clientX >= rect.left - pad && e.clientX <= rect.right + pad;
+      let insideY = e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
+      
+      // If log panel is visible, extend mouse-ignore check area to include the log panel!
+      if (showLogPanel && !isMinimized) {
+        const logRect = logPanel.getBoundingClientRect();
+        const insideLogX = e.clientX >= logRect.left - pad && e.clientX <= logRect.right + pad;
+        const insideLogY = e.clientY >= logRect.top - pad && e.clientY <= logRect.bottom + pad;
+        if (insideLogX && insideLogY) {
+          insideX = true;
+          insideY = true;
+        }
+      }
       
       if (insideX && insideY) {
         if (window.petBridge?.setIgnoreMouseEvents) {
@@ -650,6 +825,24 @@
           petTooltipSub.innerHTML = `<span class="atp-heartbeat-dot"></span>Captured: ${lastCapture}`;
         } else {
           petTooltipSub.innerHTML = `<span class="atp-heartbeat-dot"></span>Heartbeat Active`;
+        }
+
+        // Render updated logs array from React web app
+        if (data.logs && Array.isArray(data.logs)) {
+          if (data.logs.length === 0) {
+            logBody.innerHTML = `<div class="atp-log-empty">No activity logs recorded.</div>`;
+          } else {
+            const html = data.logs.slice().reverse().map(log => {
+              const typeClass = `log-${log.type || 'info'}`;
+              return `
+                <div class="atp-log-item ${typeClass}">
+                  <span class="atp-log-time">[${log.timestamp}]</span>
+                  <span class="atp-log-msg">${log.message}</span>
+                </div>
+              `;
+            }).join('');
+            logBody.innerHTML = html;
+          }
         }
 
         // Map state to asset filenames
