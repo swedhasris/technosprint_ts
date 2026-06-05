@@ -82,9 +82,14 @@ export function MyDashboard() {
       };
 
       // Filter tickets related to the active user (assigned to them or created by them)
-      const userTickets = allTickets.filter(t => t.assignedTo === user.uid || t.createdBy === user.uid);
-      const assigned = allTickets.filter(t => t.assignedTo === user.uid);
-      const created = allTickets.filter(t => t.createdBy === user.uid);
+      const userTickets = allTickets.filter(t =>
+  t.assignedTo === user.uid || t.assigned_to === user.uid || t.assigned_user === user.uid ||
+  t.createdBy === user.uid || t.created_by === user.uid
+);
+      const assigned = allTickets.filter(t =>
+        t.assignedTo === user.uid || t.assigned_to === user.uid || t.assigned_user === user.uid);
+      const created = allTickets.filter(t =>
+        t.createdBy === user.uid || t.created_by === user.uid);
 
       // Compute status counts
       const open = userTickets.filter(t => t.status === "New" || t.status === "Open").length;
