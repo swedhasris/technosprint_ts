@@ -119,6 +119,15 @@
     --color-zinc-200: #2D3B55;
     --color-zinc-300: #2D3B55;
     --color-zinc-400: #94A3B8;
+
+    /* Custom dark-theme variables for Approved/Resolved page */
+    --dark-bg: #020817;
+    --dark-surface: #111827;
+    --dark-card: #1A2332;
+    --dark-border: #1E3A5F;
+    --dark-text: #FFFFFF;
+    --dark-text-secondary: #CBD5E1;
+    --dark-accent: #2563EB;
   }
 }
 
@@ -803,4 +812,109 @@ html:not(.dark) .dark textarea {
   background-color: #1A2332 !important;
   border: 1px solid #2D3B55 !important;
   color: #FFFFFF !important;
+}
+
+/* --- Approved / Resolved Tickets Dark Mode Overrides --- */
+.dark .approved-tickets-container {
+  color: #FFFFFF !important;
+}
+
+/* Statistics Cards */
+.dark .approved-tickets-container .stats-card {
+  background: var(--dark-surface) !important;
+  border: 1px solid var(--dark-border) !important;
+}
+
+.dark .approved-tickets-container .stats-card .text-3xl {
+  color: #60A5FA !important;
+}
+
+.dark .approved-tickets-container .stats-card .text-xs {
+  color: var(--dark-text-secondary) !important;
+}
+
+.dark .approved-tickets-container .stats-card svg {
+  color: #60A5FA !important;
+}
+
+/* Priority Chart Container */
+.dark .approved-tickets-container .chart-container {
+  background: var(--dark-surface) !important;
+  border: 1px solid var(--dark-border) !important;
+}
+
+.dark .approved-tickets-container .chart-container h3 {
+  color: var(--dark-text) !important;
+}
+
+/* Recharts internal components */
+.dark .approved-tickets-container .chart-container .recharts-text {
+  fill: var(--dark-text-secondary) !important;
+}
+
+.dark .approved-tickets-container .chart-container .recharts-cartesian-grid-line {
+  stroke: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .approved-tickets-container .chart-container .recharts-default-tooltip {
+  background-color: #1F2937 !important;
+  border: 1px solid var(--dark-border) !important;
+}
+
+.dark .approved-tickets-container .chart-container .recharts-tooltip-item,
+.dark .approved-tickets-container .chart-container .recharts-tooltip-label {
+  color: #FFFFFF !important;
+}
+
+/* Search & Filters Section */
+.dark .approved-tickets-container input,
+.dark .approved-tickets-container select,
+.dark .approved-tickets-container button:not(.bg-sn-green) {
+  background: #0F172A !important;
+  border: 1px solid var(--dark-accent) !important;
+  color: var(--dark-text) !important;
+}
+
+.dark .approved-tickets-container input::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Tickets Table */
+.dark .approved-tickets-container .overflow-hidden {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: #0F172A !important;
+}
+
+.dark .approved-tickets-container thead tr {
+  background: var(--dark-surface) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .approved-tickets-container th {
+  color: var(--dark-text) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .approved-tickets-container tbody tr {
+  background: #0F172A !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .approved-tickets-container tbody tr:hover {
+  background: #1E293B !important;
+}
+
+.dark .approved-tickets-container td {
+  color: #E2E8F0 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Specific elements inside table rows */
+.dark .approved-tickets-container td a {
+  color: #60A5FA !important;
+}
+
+.dark .approved-tickets-container td .text-muted-foreground,
+.dark .approved-tickets-container td svg {
+  color: var(--dark-text-secondary) !important;
 }

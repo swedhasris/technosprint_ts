@@ -195,7 +195,7 @@ export function ApprovedTickets() {
   }));
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto approved-tickets-container">
 
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-border">
@@ -212,21 +212,21 @@ export function ApprovedTickets() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-border rounded-xl p-5 flex items-center gap-4">
+        <div className="bg-white border border-border rounded-xl p-5 flex items-center gap-4 stats-card">
           <CheckCircle2 className="w-10 h-10 text-green-500 opacity-80" />
           <div>
             <div className="text-3xl font-bold text-green-600">{tickets.length}</div>
             <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Resolved</div>
           </div>
         </div>
-        <div className="bg-white border border-green-200 rounded-xl p-5 flex items-center gap-4">
+        <div className="bg-white border border-green-200 rounded-xl p-5 flex items-center gap-4 stats-card">
           <CheckCircle2 className="w-10 h-10 text-green-600 opacity-80" />
           <div>
             <div className="text-3xl font-bold text-green-600">{resolvedCount}</div>
             <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Resolved</div>
           </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4 stats-card">
           <CheckCircle2 className="w-10 h-10 text-gray-500 opacity-80" />
           <div>
             <div className="text-3xl font-bold text-gray-600">{closedCount}</div>
@@ -236,7 +236,7 @@ export function ApprovedTickets() {
       </div>
 
       {/* Priority Bar Chart */}
-      <div className="bg-white border border-border rounded-xl p-5 shadow-sm">
+      <div className="bg-white border border-border rounded-xl p-5 shadow-sm chart-container">
         <h3 className="text-[11px] font-black uppercase tracking-widest text-foreground mb-4">Resolved Tickets by Priority</h3>
         <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
