@@ -92,7 +92,7 @@ export function TimesheetReports() {
               { label: "Approved Minutes", value: approvedHours.toFixed(0), sub: `${totalHours > 0 ? ((approvedHours / totalHours) * 100).toFixed(0) : 0}% of total`, color: "text-green-600" },
               { label: "Tasks Used", value: taskData.length, sub: "different tasks", color: "text-purple-600" },
             ].map(s => (
-              <div key={s.label} className="bg-white rounded-lg border border-border p-5">
+              <div key={s.label} className="bg-card rounded-lg border border-border p-5">
                 <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{s.label}</div>
                 <div className={`text-3xl font-bold mt-2 ${s.color}`}>{s.value}</div>
                 <div className="text-sm text-muted-foreground mt-1">{s.sub}</div>
@@ -101,7 +101,7 @@ export function TimesheetReports() {
           </div>
 
           {/* Minutes by Task */}
-          <div className="bg-white rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
             <div className="p-4 border-b border-border bg-muted/30">
               <h3 className="font-semibold">Minutes by Ticket Type</h3>
             </div>
@@ -123,7 +123,7 @@ export function TimesheetReports() {
 
           {/* AI Activity Sessions */}
           {activitySessions.length > 0 && (
-            <div className="bg-white rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
               <div className="p-4 border-b border-border bg-blue-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bot className="w-4 h-4 text-blue-500" />
@@ -209,7 +209,7 @@ export function TimesheetReports() {
           )}
 
           {/* Weekly History */}
-          <div className="bg-white rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
             <div className="p-4 border-b border-border bg-muted/30">
               <h3 className="font-semibold">Weekly History</h3>
             </div>
